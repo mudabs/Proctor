@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Roles - {{ user.name }}{% endblock %}
+
+{% block body %}
+<body>
+    <h1>Assign Roles - {{ user.name }}</h1>
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            <ul class="flashes">
+            {% for category, message in messages %}
+                <li class="flash {{ category }}">
+                    {{ message }}
+                </li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+
+    <form method="POST" action="{{url_for('assign_role', user_id=user.id)}}" class="form-group">
+        <label for="role"><h3>Assign New Role:</h3></label>
+        <select name="role_id" id="role" class="form-control">
+            {% for role in roles %}
+                <option value="{{ role.id }}" name="role_id" class="form-control">{{ role.name }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <button type="submit" class="btn btn-primary">Assign Role</button>
+    </form>
+
+
+    <table class="table table-hover table-striped">
+        <tr>
+            <th>Assigned Roles:</th>
+            <th> </th>
+
+        </tr>
+
+        {% for role in assigned_roles %}
+        {% for rolename in roles %}
+        {% if rolename.id == role.role_id %}
+        <tr>
+            <td>{{ rolename.name }}</td>
+
+            <td>
+                <a href="/remove_role/{{user.id}}/{{role.role_id}}" class="btn btn-danger btn-sm" onclick="return confirm('Are You Sure To Delete ?')">Remove</a>
+            </td>
+        </tr>
+           
+            {% endif %}
+        {% endfor %}
+        {% endfor %}
+        
+
+    </table>
+
+
+</body>
+</html>
+
+{%endblock%}

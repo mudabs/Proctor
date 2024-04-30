@@ -1,0 +1,158 @@
+{% extends "loginbase.html" %}
+
+{% block title %}Capture Image{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <div class="col-12 d-flex align-items-center justify-content-center">
+        <div class="bg-white shadow-soft border rounded border-light p-4 p-lg-5 fmxw-650 align-items-center">
+
+            <h1>Image Capture App</h1>
+
+            <div>
+                <img id="video-feed" src="{{ url_for('captureRender') }}" alt="Video Feed" style="width: 500px;">
+            </div>
+            <br>
+            <form id="myForm">
+                <input type="hidden" name="text3" id="text3" value="True">
+                <input type="submit" id="submit" class="btn btn-primary" value="Capture Images">
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<h1>Captured Images</h1>
+
+<br>
+<!-- <form action="/train_images" 
+    method="post">
+        <select name="name" class="form-control" id="name-select">
+            <option value=" " >Name</option>
+            {% for option in data %}
+            <option value="{{ option }}">{{ option.name }}</option>
+          {% endfor %}
+        </select>
+        <br>
+        <button type="submit" class="btn btn-primary">Train Images</button>
+    </form> -->
+<br>
+
+<div id="images" name="images"></div>
+<div>
+    
+</div>
+<form hidden id="deleteImages" action="deleteImages">
+    <br>
+    <input type="hidden" value="delete" name="del">
+    <input type="submit" class="btn btn-danger" value="Delete Images">
+</form>
+<br>
+<form hidden id="trainImages" action="train_images">
+    <input type="submit" class="btn btn-success" value="Train Images">
+</form>
+</div>
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('#myForm').submit(function (event) {
+            event.preventDefault(); // Prevent default form submission
+
+            // Get form data
+            var formData = {
+                'text3': $('#text3').val()
+            };
+
+            // Send form data via AJAX
+            $.ajax({
+                type: 'POST',
+                url: '/captureImageReg', // Change this to your Flask URL
+                data: formData,
+                success: function (response) {
+                    console.log('Form submitted successfully');
+                    $("#submit").val("Display Images")
+                        .removeClass("btn-primary").addClass("btn-info") // Using Bootstrap classes
+                    // .prop("disabled", true); // Disable the button
+                    // Handle success response if needed
+
+                    $.ajax({
+                        url: "{{ url_for('get_images_reg') }}", // Route for handling POST request
+                        type: "GET",
+                        success: function (response) {
+
+                            const data = JSON.parse(response);
+                            console.log("VALUE", data)
+                            $("#images").html(""); // Clear previous content
+
+                            if (data.images.length === 0) {
+                                // Display message
+                            } else {
+                                data.images.forEach(image => {
+                                    $("#images").append("<img src='../static/images/" + image + "'alt='' style='height: 185px; width: 185px;'>");
+                                });
+                                $('#deleteImages').removeAttr('hidden');
+                                $('#trainImages').removeAttr('hidden');
+                                $('#deleteImages').submit(function (event) {
+                                    event.preventDefault(); // Prevent default form submission
+
+                                    // Get the image names from the data.images array
+                                    const imageNames = data.images.map(image => image);
+
+                                    // Send a POST request to the deleteImages Flask URL
+                                    $.ajax({
+                                        type: 'POST',
+                                        url: '{{ url_for("deleteImages") }}', // Replace with your actual Flask URL
+                                        data: {
+                                            del: "True" // Send the image names as data
+                                        },
+                                        success: function (response) {
+                                            console.log('Images deleted successfully:', response);
+                                            $('#deleteImages').attr('hidden', 'hidden');
+                                            $("#submit").val("Capture Images")
+                                                .removeClass("btn-info").addClass("btn-primary")
+
+                                            $.ajax({
+                                                type: 'GET',
+                                                url: '{{ url_for("resetCapture") }}', // Replace with your actual Flask URL
+                                                // data: {
+                                                //     del: "True" // Send the image names as data
+                                                // },
+                                                success: function (response) {
+                                                    console.log('Images reset successfully:', response);
+                                                },
+                                                error: function (xhr, status, error) {
+                                                    console.error('Error reseting images:', error);
+                                                    // Handle deletion errors (e.g., display an error message)
+                                                }
+                                            });
+
+
+                                            // Handle successful deletion (e.g., display a message, reload page)
+                                        },
+                                        error: function (xhr, status, error) {
+                                            console.error('Error deleting images:', error);
+                                            // Handle deletion errors (e.g., display an error message)
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error:', error);
+                    // Handle error response if needed
+                }
+            });
+        });
+    });
+
+
+</script>
+
+{% endblock %}

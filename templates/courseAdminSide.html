@@ -1,0 +1,493 @@
+{% extends 'base.html' %}
+
+{% block title %} Courses {% endblock %}
+
+{% block Page %}
+{%for course in courses %}
+>{{course.courseTitle}}
+{%endfor%}
+{%endblock%}
+
+{% block body %}
+
+
+<div class="row">
+    <div class="col-md-2" style="position: relative; left: 0%; ">
+        <div class="card">
+            <div class="card-header" style="background-color:#f8b739; color: white;">
+                Lecturers
+                <a href="#">
+                    <i class="fa-solid fa-user-plus" style="position:relative; left: 65%; color: #343a40;"
+                        data-bs-toggle="modal" data-bs-target="#mymodal"></i>
+                </a>
+            </div>
+            {%for course in courses %}
+            {%for user in users %}
+            {%if course.lecturerId == user.id%}
+
+
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">{{user.name}}</li>
+            </ul>
+
+            {%endif%}
+            {%endfor%}
+            {%endfor%}
+
+        </div>
+
+        <br>
+
+
+
+        <div class="card">
+            <div class="card-header" style="background-color:#343a40; color: white;">
+                Students
+                <a href="#">
+                    <i class="fa-solid fa-user-plus" style="position: relative; left: 65%;" data-bs-toggle="modal"
+                        data-bs-target="#mymodal2"></i>
+                </a>
+
+            </div>
+            {%if enrollment%}
+            {%for enrollmen in enrollment %}
+            {%for user in users %}
+            {%if enrollmen.user_id == user.id%}
+
+
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">{{user.name}}</li>
+            </ul>
+
+            {%endif%}
+            {%endfor%}
+            {%endfor%}
+            {%else%}
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">No Students yet</li>
+            </ul>
+            {%endif%}
+        </div>
+    </div>
+
+
+
+    <div class="col-md-7 offset-md-1 " style="margin-left: 0px;">
+        <div class="card rounded" style="width: 100%; height: 70%;">
+            <div class=" card-header" style="height:60%">
+                {%for course in courses%}
+                <h1 style="padding-top: 40px">{{course.courseTitle}}</h1>
+                {%endfor%}
+            </div>
+
+        </div>
+        <br>
+
+        <div class="dropdown dropstart">
+            <div class="card rounded shadow-sm" data-bs-toggle="dropdown">
+                <button class="fas fa-clipboard mr-3 " style="font-size: x-large;"></button>
+                <br>
+                {%for q in quiz%}
+                <ul class="list-group list-group-flush">
+
+                    <li class="list-group-item">
+                        <a href="{{ url_for('userResults', quizId=q.id) }}">
+                            <h3 style="text-align: center;">{{q.topic}}</h3>
+                        </a>
+                    </li>
+
+                </ul>
+                {%endfor%}
+            </div>
+            <ul class="dropdown-menu">
+                {%for q in quiz%}
+                <li><a class="dropdown-item" href="{{ url_for('manageResults',quizId = q.id)}}">View Results</a></li>
+                {%endfor%}
+                <li><a class="dropdown-item">View Questions</a></li>
+
+
+            </ul>
+        </div>
+
+
+    </div>
+
+
+
+    <div class="col-md-2 offset-md-1" style="padding-left: 0%; margin-left: 15px;">
+
+        <div class="dropdown dropstart">
+            <button type="button" class="btn btn-primary btn-pill" data-bs-toggle="dropdown">
+                <i class="fas fa-plus"></i> Create Material
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mymodal">Assignment</a></li>
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mymodalquiz">Quiz</a></li>
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mymodaltopic">Questions</a></li>
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mymodal">Upload Notes</a></li>
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mymodal22">Topic</a></li>
+
+            </ul>
+        </div>
+
+        <br> <br>
+
+        <div class=" card rounded" style="width: 100%; height: 70%;">
+            <h3 class="card-header" style="background-color:orange; color: white;">
+                Course Code
+            </h3>
+            {%for course in courses %}
+            <h3 style="text-align: center; padding: 40px; margin: 0px;">{{course.courseCode}}</h3>
+            {%endfor%}
+        </div>
+        <br>
+        <div class=" card rounded" style="width: 100%; height: 70%;">
+            <h3 class="card-header">
+                Upcoming Work
+            </h3>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Modal Add Employee-->
+<div id="mymodal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Lecturer</h4>
+            </div>
+            <div class="modal-body">
+                <form action="" method="POST">
+                    <div class="form-group">
+                        <label><b>User</b>:</label>
+                        {%for course in courses%}
+                        <input type="hidden" name="course" value="{{course.id}}">
+                        {%endfor%}
+                        <select name="lecturer" class="form-control" required>
+                            <option value="">Select User</option>
+                            {%for user in users%}
+                            <option value="{{user.id}}">{{user.name}}</option>
+                            {%endfor%}
+                        </select>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <button class="btn btn-primary" type="submit">Add
+                            Course</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Employee-->
+<div id="mymodalquiz" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Lecturer</h4>
+            </div>
+            <div class="modal-body">
+                <form action="{{url_for('createQuiz')}}" method="POST">
+                    <div class="form-group">
+                        {%for course in courses%}
+                        <label for="">Course</label>
+                        <input type="hidden" name="course" value="{{course.id}}">
+
+                        <p class="form-control">{{course.courseTitle}}</p>
+                        {%endfor%}
+
+                        <label for="">Topic</label>
+                        <input type="text" name="topic" class="form-control" id="topic">
+
+
+                        <label for="">For</label>
+                        <select name="" id="" class="form-control">
+                            <option value="">All Students</option>
+                        </select>
+
+                        <label for="totalPoints">Total Points</label>
+                        <input type="number" name="totalPoints" class="form-control" id="points">
+
+                        <label for="">Quiz Date</label>
+                        <input type="datetime-local" class="form-control" name="duedate">
+
+                        <div class="form-group">
+                            <label>Quiz Duration</label>
+                            <div class="d-flex">
+                                <select name="durationHours" id="duration" class="form-control"
+                                    style="margin-right: 10px;">
+                                    <option value="0">Hours</option>
+                                    {% for i in range(0, 11) %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                                <select name="durationMinutes" id="duration" class="form-control"
+                                    style="margin-left: 10px;" required>
+                                    <option value="0">Minutes</option>
+                                    {% for i in range(0, 60) %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+
+                            </div>
+                        </div>
+                        <label for="instructions">Instructions</label>
+                        <textarea rows="5" class="form-control" placeholder="Instructions (optional)"
+                            name="instructions"></textarea>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="proctor">Allow Proctoring</label><br>
+                        <input type="checkbox" style="width: 50px;" name="proctor" id="proctor">
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-primary" type="submit">Create
+                            Quiz</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Add Topic-->
+<div id="mymodaltopic" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Create Quiz</h4>
+            </div>
+            <div class="modal-body">
+                {%for course in courses%}
+                <form action="{{url_for('addQuestions',courseId=course.id)}}" method="POST">
+                    <div class="form-group">
+                        <label for="">Course</label>
+                        {%for course in courses%}
+                        <input type="hidden" name="course" value="{{course.id}}">
+                        <input type="hidden" name="topic" value="topic">
+                        <p class="form-control">{{course.courseTitle}}</p>
+                        {%endfor%}
+
+                        <label for="">Topic</label>
+                        <select name="topic" id="" class="form-control">
+                            {%for q in quiz%}
+                            <option value="{{q.topic}}">{{q.topic}}</option>
+                            {%endfor%}
+                        </select>
+                        <br>
+                        <div class="form-group">
+                            <button class="btn btn-primary" type="submit">Proceed To
+                                Quiz Questions</button>
+                        </div>
+                </form>
+                {%endfor%}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Quiz-->
+<div id="mymodal22" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Create Quiz</h4>
+            </div>
+            <div class="modal-body">
+                {%for course in courses%}
+                <form action="{{url_for('createQuiz')}}" method="POST">
+                    <div class="form-group">
+                        <label for="">Course</label>
+                        <input type="hidden" name="course" value="{{course.id}}">
+                        <p class="form-control">{{course.courseTitle}}</p>
+
+
+                        <label for="">Topic</label>
+                        <input type="text" name="topic" class="form-control" id="topic">
+
+
+                        <label for="">For</label>
+                        <select name="" id="" class="form-control">
+                            <option value="">All Students</option>
+                        </select>
+
+                        <label for="totalPoints">Total Points</label>
+                        <input type="number" name="totalPoints" class="form-control" id="points">
+
+                        <label for="">Quiz Date</label>
+                        <input type="datetime-local" class="form-control" name="duedate">
+
+                        <div class="form-group">
+                            <label>Quiz Duration</label>
+                            <div class="d-flex">
+                                <select name="durationHours" id="duration" class="form-control"
+                                    style="margin-right: 10px;">
+                                    <option value="0">Hours</option>
+                                    {% for i in range(0, 11) %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                                <select name="durationMinutes" id="duration" class="form-control"
+                                    style="margin-left: 10px;" required>
+                                    <option value="0">Minutes</option>
+                                    {% for i in range(0, 60) %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+
+                            </div>
+                        </div>
+                        <label for="instructions">Instructions</label>
+                        <textarea rows="5" class="form-control" placeholder="Instructions (optional)"
+                            name="instructions"></textarea>
+
+                    </div>
+                    <div class="form-group">
+                        <label for="proctor">Allow Proctoring</label><br>
+                        <input type="checkbox" style="width: 50px;" name="proctor" id="proctor">
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-primary" type="submit">Create
+                            Quiz</button>
+                    </div>
+                </form>
+                {%endfor%}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="mymodal2" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Add Students</h4>
+            </div>
+            <div class="modal-body">
+                <form action="{{url_for('enroll')}}" method="POST" required>
+                    <div class="form-group">
+                        <label><b>User</b>:</label>
+                        {%for course in courses%}
+                        <input type="hidden" name="course" value="{{course.id}}">
+                        {%endfor%}
+                        <select name="student" class="form-control">
+                            <option value="">Select User</option>
+                            {%for user in users%}
+                            <option value="{{user.id}}">{{user.name}}</option>
+                            {%endfor%}
+                        </select>
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <button class="btn btn-primary" type="submit">Add
+                            Course</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+<!-- 
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>    
+<script>
+    $(document).ready(function () {
+
+        var MaxInputs = 8; //maximum input boxes allowed
+        var InputsWrapper = $("#InputsWrapper"); //Input boxes wrapper ID
+        var AddButton = $("#AddMoreFileBox"); //Add button ID
+
+        var x = InputsWrapper.length; //initlal text box count
+        var FieldCount = 1; //to keep track of text box added
+
+        $(AddButton).click(function (e)  //on add input button click
+        {
+            if (x <= MaxInputs) //max input box allowed
+            {
+                FieldCount++; //text box added increment
+                //add input box
+                $(InputsWrapper).append('<div class="row"><p class="col-xs-6"><input type="text" placeholder="Enter your skill" class="form-control skill_list" name="skill[]" id="field_' + FieldCount + '" value="Enter your skill ' + FieldCount + '"/></p><a href="#" class="btn btn-danger removeclass">×</a></div>');
+                x++; //text box increment
+            }
+            return false;
+        });
+
+        $("body").on("click", ".removeclass", function (e) { //user click on remove text
+            if (x > 1) {
+                $(this).parent('div').remove(); //remove text box
+                x--; //decrement textbox
+            }
+            return false;
+        })
+        $('#submit').click(function () {
+            $.ajax({
+                url: "/postskill",
+                method: "POST",
+                data: $('#add_skills').serialize(),
+                success: function (data) {
+                    alert(data)
+                    $('#resultbox').html(data);
+                    $('#add_skills')[0].reset();
+                }
+            });
+        });
+    });
+</script>
+<style>
+    .row {
+        padding: 10px;
+    }
+</style>
+<div class="container">
+    <br />
+    <br />
+    <h2 align="center">Python Flask Add Remove Input Fields Dynamically with JQuery Ajax and Mysqldb</h2>
+    <div id="resultbox"></div>
+    <div class="form-group">
+        <form name="add_skills" id="add_skills">
+            <div id="InputsWrapper">
+                <div class="row">
+                    <div class="col-xs-6"><input type="text" name="skill[]" placeholder="Enter your skill"
+                            class="form-control name_list" /></div>
+                    <div class="col-xs-6"><button type="button" name="add" id="AddMoreFileBox"
+                            class="btn btn-success">Add More</button></div>
+                </div>
+            </div>
+            <br />
+            <input type="button" name="submit" id="submit" class="btn btn-info" value="Submit" />
+        </form>
+    </div>
+</div> -->

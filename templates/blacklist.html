@@ -1,0 +1,37 @@
+{% extends "loginbase.html" %}
+
+{% block title %}Capture Image{% endblock %}
+
+{% block content %}
+
+<body>
+    <h1>Website Blocker</h1>
+    <form method="POST">
+        <!-- <textarea class="form-control" name="urls" rows="5" cols="50" placeholder="Enter URLs to block (one per line)"></textarea><br> -->
+        <button class="btn btn-primary" type="submit">Block Websites</button>
+    </form>
+    <hr>
+    <h2>Blocked Websites</h2>
+    {% if blocked_urls %}
+        <ul>
+            {% for blocked_url in blocked_urls %}
+                <li>{{ blocked_url.url }}</li>
+            {% endfor %}
+        </ul>
+        <form action="{{ url_for('unblock') }}" method="post">
+            <button class="btn btn-primary" type="submit">Unblock Websites</button>
+        </form>
+    {% else %}
+        <p>No websites blocked yet.</p>
+    {% endif %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+</body>
+{% endblock %}

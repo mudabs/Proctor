@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %} Home {% endblock %}
+
+{% block body %}
+
+
+<div class="mt-3" style="margin: 0;">
+    <div class="row">
+
+        <div class="col-md-9" style="background-color: white;">
+            <h2>Quiz</h2>
+            <form method="POST" action="{{url_for('addQuestion')}}">
+                <div id="essay-question">
+
+                    <input type="hidden" id="num_inputs" name="num_inputs" value="{{ num_inputs }}">
+                    <input type="hidden" name="courseId" value="{{courseId}}">
+                    {%for q in quiz%}
+                    <input type="hidden" name="courseId" value="{{courseId}}">
+                    {%endfor%}
+                    <div class="row">
+                        <div class="mb-3 col">
+                            <label for="question" class="form-label">
+                                <h5>Question</h5>
+                            </label>
+                            <textarea class="form-control" name="question" id="question" rows="5"
+                                placeholder="Input Question"></textarea>
+
+                        </div>
+                        <div class="mb-3 col-md-2">
+                            <label for="answerType" class="form-label">
+                                <h5>Answer Type</h5>
+                            </label>
+                            <select name="answerType" id="answerType" class="form-control">
+                                <option value="Short Answer">Short Answer</option>
+                                <option value="Essay">Essay</option>
+                                <option value="Multiple Choice">Multiple Choice</option>
+                            </select>
+
+                            <div class="">
+
+                                <label for="topic" class="form-label">
+                                    <h5>Topic</h5>
+                                </label>
+                                <select name="topic" id="topic" class="form-control" required>
+                                    <option value="0">Select Topic</option>
+                                    {%for q in quiz%}
+                                    <option value="{{q.topic}}">{{q.topic}}</option>
+                                    {%endfor%}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="" style="width: 10%;">
+                            <label for="qpoints">
+                                <h5>Points</h5>
+                            </label>
+                            <input type="number" name="qpoints" id="qpoints" class="form-control" placeholder="Points"
+                                required>
+
+                        </div>
+
+                    </div>
+                    <br>
+                    <div id="answers" class="d-none ">
+                        {% for i in range(1, num_inputs + 1) %}
+                        <div class="answer-row row pl-3">
+                            <label for="answer{{ i }}">Answer {{ i }}:</label>
+                            <input type="text" id="answer{{ i }}" name="answer{{ i }}" id="answer{{ i }}"
+                                class="form-control col">
+                            <input type="radio" name="checkAnswer" value="answer{{ i }}" id="checkAnswer" style="font-size: medium;"
+                                class="col-md-1">
+                        </div>
+                        {% endfor %}
+                        <br>
+
+                    </div>
+                    <div id="answers-buttons" class="d-none">
+                        <button type="button" id="add-button" class="btn btn-success">Add Answer</button>
+                        <button type="button" id="remove-button" class="btn btn-danger">Remove Last Answer</button>
+                    </div>
+                    <br>
+                    <button type="submit" class="btn btn-primary">Submit Question</button>
+
+
+
+
+                </div>
+            </form>
+        </div>
+        <div class="col pt-5 mt-1">
+            <div class="row">
+                <div class="col">
+                    <label class="form-label">
+                        <h6>Course</h6>
+                    </label>
+                    {%for c in course%}
+                    <p class="form-control">{{c.courseTitle}}</p> <br>
+                    {%endfor%}
+                </div>
+                <div class="col">
+                    <label for="">
+                        <h6>For</h6>
+                    </label>
+                    <select name="students" id="" class="form-control">
+                        <option value="">All Students</option>
+                    </select>
+                </div>
+            </div>
+
+            <label for="points" class="form-label">
+                <h6>Points Remaining</h6>
+            </label>
+            <p name="points" id="points" class="form-control">{{points}}</p>
+            <label for="dueDate" class="form-label">
+                <h6>Due Date</h6>
+            </label>
+            <p class="form-control" name="dueDate" id="dueDate"><br>
+                <label for="instructions" class="form-label">
+                    <h6>Instructions</h6>
+                </label>
+            <p name="instructions" id="instructions" class="form-control" style="height: 60px;"></p>
+            <label for="">
+                <h6>Proctoring:</h6>
+            </label>
+            <p class="form-control" name="proc" id="proc"></p>
+
+        </div>
+    </div>
+</div>
+
+
+<div>
+    <h2><b>Questions </b> </h2>
+
+    <!-- Display Course Title -->
+    {%for course in courses %}
+    <h4>{{course.courseTitle}}</h4>
+    {%for lecturer in lecturers %}
+    {%if lecturer.id == course.lecturerId %}
+    <h5>{{lecturer.name}}</h5>
+    {%endif%}
+    {%endfor%}
+    {%endfor%}
+
+
+    <!-- {% with messages = get_flashed_messages() %}
+{% if messages %}
+
+{% for message in messages %}
+<div class="alert alert-success alert-dismissible" role="alert">
+<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+{{message}}
+</div>
+{% endfor %}
+
+{% endif %}
+{% endwith %} -->
+
+    <table class="table table-hover table-striped">
+        <tr>
+            <th>Question</th>
+            <th class="pl-5">Answers</th>
+            <th>Answer Type</th>
+            <th> </th>
+
+        </tr>
+        {% for question in questions%}
+        <tr>
+            <td>{{ question.question}} ({{question.points}})</td>
+
+            <td>
+                <ul style="list-style-type: none;">
+                    {% for answer in answers %}
+                    {%if answer.questionId == question.id%}
+                    <li>
+                        <input type="checkbox" name="check" id="" value="{{ answer.answer }}">
+                        <label for="check">{{ answer.answer }}</label>
+                    </li>
+                    {%endif%}
+                    {% endfor %}
+
+                </ul>
+            </td>
+            <td>
+                {{question.answerType}}
+            </td>
+            <td>
+                <a href="/update/{{question.id}}" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#modaledit{{question.id}}">Edit</a>
+
+                <a href="/deleteQuestions/{{question.id}}/{{courseId}}" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Are You Sure To Delete ?')">Delete</a>
+
+            </td>
+
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+<script>
+    const topicSelect = document.querySelector('#topic'); // Assuming you've added an ID to the topic select element
+    topicSelect.addEventListener('change', fetchAndUpdateData);
+
+    function fetchAndUpdateData() {
+        const selectedTopic = topicSelect.value;
+        fetch('/fetch_data?topic=' + selectedTopic)
+            .then(response => response.json())
+            .then(data => {
+                // Update form fields with fetched data
+                document.getElementById('points').textContent = data[0].points;
+                document.getElementById('dueDate').textContent = data[0].dueDate;
+                document.getElementById('instructions').textContent = data[0].instructions;
+                document.getElementById('proc').textContent = data[0].proctor;
+            })
+            .catch(error => console.error(error));
+    }
+</script>
+
+<!-- Changing Points -->
+<script>
+    $(document).ready(function () {
+        $('#qpoints').on('change', function () {
+            var newPoints = 100 - parseInt($(this).val());
+            if (newPoints < 0) {
+                newPoints = 0; // Ensure points don't go below 0
+            }
+            $('#points').text(newPoints);
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        $('#answerType').on('change', function () {
+            if (this.value === 'Multiple Choice') {
+                $('#answers').removeClass('d-none'); // Show the answers div
+                $('#answers-buttons').removeClass('d-none'); // Show the answers div
+            } else {
+                $('#answers').addClass('d-none'); // Hide the answers div
+                $('#answers-buttons').addClass('d-none'); // Hide the answers div
+            }
+        });
+
+        $("#add-button").click(function () {
+            var num_inputs = parseInt($("#num_inputs").val()) + 1;
+            $("#answers").append(`<div class="answer-row row pl-3">
+                    <label for="answer${num_inputs}">Answer ${num_inputs}:</label>
+                    <input type="text" name="answer${num_inputs}" class="form-control col" id="answer${num_inputs}">
+                    <input type="radio" name="checkAnswer" value="answer${num_inputs}" id="checkAnswer" style="height:40px; font-size: medium;" class="col-md-1"> <br> <br>
+                </div>`);
+            $("#num_inputs").val(num_inputs);
+        });
+
+        $("#remove-button").click(function () {
+            var num_inputs = parseInt($("#num_inputs").val());
+            if (num_inputs > 1) {  // Ensure at least one input remains
+                $("#answers .answer-row:last-child").remove();
+                num_inputs--;
+                $("#num_inputs").val(num_inputs);
+            }
+        });
+    });
+</script>
+
+{% endblock %}

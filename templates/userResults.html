@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %} Quiz {% endblock %}
+
+{% block proctor %}
+
+<div style="height: 100px; width: 50%;position: fixed; left: 10px;">
+    <div>
+        <!-- <h1 style="text-align: center; color: #fff;">Quiz Countdown</h1>  -->
+
+        <p id="timer" style="margin:0;width: 300px; position:fixed; bottom:10px"> <span id="remaining_time"></span></p>
+        <!-- <div id="text"></div> -->
+        
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+
+
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalLabel">Messages</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="messageModalBody">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row" style="display: flex;">
+    <div class="row"
+        style="position: relative;margin-right: 0px;margin-left: 0px;left: 7px;padding-left: 0px; width: 99%;" s>
+        {%for q in quiz%}
+        <h1><b>{{q.topic}} - RESULTS</b></h1>
+        {%endfor%}
+
+    </div>
+
+    <br> <br>
+
+    <div class="row"
+        style="background-color: #f8b740; padding-left: 10px; position: relative;margin-right: 0px;margin-left: 0px;left: 7px;padding-left: 0px; width: 99%; height: 200px;">
+        <h2 style="padding: 10px;">Instructions</h2>
+        <br> <br> <br> <br>
+        {%for q in quiz%}
+
+        <h4 style="position: absolute; left: 0px; top: 50px; padding: 10px;">{{q.instructions}}</h4>
+
+        {%endfor%}
+        <h5 style="position: absolute; left: 0px; top: 150px; padding: 10px;">Number Of Questions: {{ questions|length
+            }} </h5>
+    </div>
+
+
+
+
+    <div name="myform" id="myform" style="margin:0 auto" class="pt-3" method="post"
+        style="margin: 0 auto;">
+        {%for question in questions%}
+        <h3>{{loop.index}}. {{question.question}}</h3>
+
+
+        {%if question.answerType == "Essay"%}
+        <textarea name="mcq{{question.id}}" id="mcq{{question.id}}" cols="30" rows="30" class="form-control"></textarea>
+        {%endif%}
+
+        {%if question.answerType == "Short Answer"%}
+        <textarea name="mcq{{question.id}}" id="mcq{{question.id}}" cols="30" rows="15" class="form-control"></textarea>
+        {%endif%}
+
+        {%for answer in answers%}
+        {%if question.id == answer.questionId%}
+
+        <h4 class="form-control">{{answer.answer}}</h4>
+
+        {%endif%}
+        {%endfor%} <br>
+        <hr>
+        {%endfor%}
+
+        {%for m in marks%}
+        <h2>Marks {{m.mark}} / {{m.totalmark}}</h2> 
+        {%endfor%}
+
+        <hr style="background-color: black; height:5px;">
+
+        <h2 style="text-align: center;">END OF QUIZ</h2>
+</div>
+
+
+</div>
+
+
+
+
+
+{%endblock %}

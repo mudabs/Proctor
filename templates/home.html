@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Proctoring{%endblock%}
+
+{% block content %}
+
+
+<!-- 
+<div class="container p-0" >
+    <h1 class="display-4">Home</h1>
+    {% if user %}
+    <p class="lead">Welcome, {{ user.name }}!</p>
+    <a href="{{ url_for('logout') }}" class="btn btn-primary">Logout</a>
+    {% else %}
+    <p class="lead">Welcome, Guest!</p>
+    <a href="{{ url_for('login') }}" class="btn btn-secondary me-2">Login</a>
+    <a href="{{ url_for('register') }}" class="btn btn-outline-primary">Register</a>
+    {% endif %}
+</div> -->
+
+{% if user %}
+<h2>My Courses</h2>
+<div class="dropdown dropstart" >
+    <button type="button" class="fa-solid fa-circle-plus" style="font-size: xxx-large; padding-right: 2rem;"
+      data-bs-toggle="dropdown">
+      Dropdown button
+    </button>
+    <ul class="dropdown-menu">
+      <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mymodal1">Join Course</a></li>
+      <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#mymodal2">Create Course</a></li>
+    </ul>
+  </div>
+  {% endif %}
+
+
+  
+  <!-- Modal Add Employee-->
+  <div id="mymodal1" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Join Course</h4>
+            </div>
+            <div class="modal-body">
+                <form action="{{url_for('joinCourse')}}" method="POST">
+                    <div class="form-group">
+                        <label><b>Course Code</b>:</label>
+                        <input type="text" class="form-control" name="courseCode" required="1">
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <button class="btn btn-primary" type="submit">Add
+                            Course</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+  <!-- Modal Add Employee-->
+  <div id="mymodal2" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Create Course</h4>
+            </div>
+            <div class="modal-body">
+                <form action="{{url_for('createCourse')}}" method="POST">
+                    <div class="form-group">
+                        <label><b>Course Name</b>:</label>
+                        <input type="text" class="form-control" name="courseName" required="1">
+                    </div>
+                    <br>
+                    <div class="form-group">
+                        <button class="btn btn-primary" type="submit">Add
+                            Course</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% if user %}
+<div class="row">
+    <h4 class="pt-5">Teaching</h4>
+    <hr style="height: 2px; background-color: black;">
+    {%for course in mycourses%}
+    <div class="col-12 col-md-4 mt-5">
+        <div class="card rounded-lg shadow-sm w-100 h-50">
+            <div class="row g-0">
+                <div class="col position-relative">
+                    
+                    <div class="card border-radius: 10px;">
+                        <div class="card-header" style="height: 8rem; background-image: url(https://th.bing.com/th/id/OIP.8QlnomM98vYeBgOkCbekYgHaHa?w=626&h=626&rs=1&pid=ImgDetMain);">
+                            <div class="row">
+                                <a href="/courseAdminSide/{{course.id}}">
+                                    
+                                    <h2 style="color: white;"><b><b> {{course.courseTitle}}</b></b></h2>
+                                    
+                                </a>
+                                <i class="fa-solid fa-ellipsis-vertical position-absolute"
+                                    style="left:40%; font-size: 24px; color: white;" data-bs-toggle="dropdown"></i>
+                                <ul class="dropdown-menu" style="width: 20px;">
+                                    <li><a class="dropdown-item" href="/deleteCourse/{{course.id}}"  onclick="return confirm('Are You Sure To Delete ?')">Delete Course</a></li>
+                                </ul>
+                            </div>
+
+                            {%for user in allUsers%}
+                            {%if course.lecturerId == user.id%}
+                            <div style="color: white;">{{user.name}}</div>
+                            {%endif%}
+                            {%endfor%}
+                        </div>
+                        <div class="card-body" style="height: 11rem;">
+                            <!-- <h5 class="card-title">Card title</h5>
+                            <p class="card-text">Some quick example text to build on the card title and make up the bulk
+                                of the card's content.</p>
+                            <a href="#" class="btn btn-primary">Go somewhere</a> -->
+                        </div>
+                        <div class="card-footer">
+                            <a href="/mywork" class="col"> <i class="fa-solid fa-book"
+                                    style="position:absolute; right: 10; font-size:x-large;"></i></a>
+                            <a href="/files" class="col"><i class="fa-solid fa-folder" style="font-size:x-large;"></i></a>
+
+                        </div>
+                    </div>
+
+                    <button class="container rounded-pill position-absolute right-0 bottom-0"
+                        style="width: 5rem; height: 5rem; left:75%; top:25%; background-color: #f0f0f0;"><i
+                            class="fa-solid fa-user"
+                            style=" font-size: 3rem; line-height: 5rem; text-align: center;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {%endfor%}
+
+
+</div>
+
+
+
+<div class="row">
+    <h4 class="pt-5">Enrolled</h4>
+    <hr style="height: 2px; background-color: black;">
+    {%for myEnrolledCourse in myEnrolledCourses%}
+    <div class="col-12 col-md-4 mt-5">
+        <div class="card rounded-lg shadow-sm w-100 h-50">
+            <div class="row g-0">
+                <div class="col position-relative">
+                    <div class="card">
+                        <div class="card-header" style="height: 8rem; color: white; background-image: url('https://th.bing.com/th/id/R.b75dc1857e3f0adbb6078a3eddc59460?rik=Qla5qckl4pa0rg&pid=ImgRaw&r=0');">
+                            <div class="row">
+                                <a href="/courseUsersSide/{{myEnrolledCourse.course_id}}">
+                            <strong>
+
+                                   
+                                    {%for course in allCourses%}
+                                    {%if myEnrolledCourse.course_id == course.id%}
+                                    <h2 style="color: white;"><b><b> {{course.courseTitle}}</b></b></h2>
+                                    {%endif%}
+                                    {%endfor%}
+                            </strong>         
+                            
+                                </a>
+                                <i class="fa-solid fa-ellipsis-vertical position-absolute"
+                                    style="left:40%; font-size: 24px;" data-bs-toggle="dropdown"></i>
+                                <ul class="dropdown-menu" style="width: 20px;">
+                                    <li><a class="dropdown-item" href="/unenroll/{{myEnrolledCourse.user_id}}/{{myEnrolledCourse.course_id}}" onclick="return confirm('Are You Sure you want To Unenroll ?')">Unenroll</a></li>
+                                </ul>
+                            </div>
+
+                            {%for user in allUsers%}
+                            {%for course in allCourses%}
+                            {%if myEnrolledCourse.course_id == course.id%}
+                            {%if course.lecturerId == user.id%}
+                            <div>{{user.name}}</div>
+                            {%endif%}
+                            {%endif%}
+                            {%endfor%}
+                            {%endfor%}
+                        </div>
+                        <div class="card-body" style="height: 11rem;">
+                            <!-- <h5 class="card-title">Card title</h5>
+                            <p class="card-text">Some quick example text to build on the card title and make up the bulk
+                                of the card's content.</p>
+                            <a href="#" class="btn btn-primary">Go somewhere</a> -->
+                        </div>
+                        <div class="card-footer">
+                            <a href="/mywork" class="col"> <i class="fa-solid fa-book"
+                                    style="position:absolute; right: 10; font-size:x-large;"></i></a>
+                            <a href="/files" class="col"><i class="fa-solid fa-folder" style="font-size:x-large;"></i></a>
+
+                        </div>
+                    </div>
+
+                    <button class="container rounded-pill position-absolute right-0 bottom-0"
+                        style="width: 5rem; height: 5rem; left:75%; top:25%; background-color: #f0f0f0;"><i
+                            class="fa-solid fa-user"
+                            style=" font-size: 3rem; line-height: 5rem; text-align: center;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {%endfor%}
+</div>
+
+{% endif %}
+
+
+
+{%endblock%}

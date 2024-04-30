@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <title>{% block title %}Manage Results{% endblock %}</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <style id="" media="all">
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 300;
+            font-display: swap;
+            src: url(/fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLDz8Z1xlEA.ttf) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url(/fonts.gstatic.com/s/poppins/v20/pxiEyp8kv8JHgFVrJJfedw.ttf) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 500;
+            font-display: swap;
+            src: url(/fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlEA.ttf) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 600;
+            font-display: swap;
+            src: url(/fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLEj6Z1xlEA.ttf) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 700;
+            font-display: swap;
+            src: url(/fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLCz7Z1xlEA.ttf) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 800;
+            font-display: swap;
+            src: url(/fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLDD4Z1xlEA.ttf) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 900;
+            font-display: swap;
+            src: url(/fonts.gstatic.com/s/poppins/v20/pxiByp8kv8JHgFVrLBT5Z1xlEA.ttf) format('truetype');
+        }
+    </style>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../static/css/style.css">
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+
+
+    <meta name="robots" content="noindex, follow">
+</head>
+
+<body>
+
+    <div class="wrapper d-flex align-items-stretch" style="display: none;">
+        <nav id="sidebar">
+            <div class="p-4 pt-5">
+                <a href="#" class="img logo rounded-circle mb-5"
+                    style="background-image: url(../static/images/logo/logo.png);"></a>
+                <ul class="list-unstyled components mb-5">
+                    <li class="active">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+                    </li>
+
+                    {%if username%}
+                    <li class="active">
+                        <a href="#teachingSubmenu" data-bs-toggle="collapse" aria-expanded="false"
+                            class="dropdown-toggle" data-bs-parent="#sidebar">Teaching</a>
+                        <ul class="collapse list-unstyled" id="teachingSubmenu">
+                            <li>
+                                {% if teachingCourses %}
+                                {% for teachingCourse in teachingCourses %}
+                                <a href="/courseAdminSide/{{teachingCourse.id}}">{{teachingCourse.courseTitle}}</a>
+                                {% endfor %}
+                                {% else %}
+                                <p>No teaching courses found.</p>
+                                {% endif %}
+                            </li>
+
+                        </ul>
+                    </li>
+                    <li class="active">
+                        <a href="#enrollmentSubmenu" data-bs-toggle="collapse" aria-expanded="false"
+                            class="dropdown-toggle" data-bs-parent="#sidebar">Enrolled</a>
+                        <ul class="collapse list-unstyled" id="enrollmentSubmenu">
+                            <li>
+                                {% if enrollments %}
+                                {%for enrollment in enrollments%}
+                                {%for allCourse in allCourses%}
+                                {%if enrollment.course_id == allCourse.id%}
+                                <a href="/courseUsersSide/{{allCourse.id}}">{{allCourse.courseTitle}} </a>
+                                {%endif%}
+                                {%endfor%}
+                                {%endfor%}
+                                {%endif%}
+
+
+                            </li>
+
+                        </ul>
+                    </li>
+                    {%endif%}
+
+                    <li>
+                        <a href="/users">User Roles</a>
+                    </li>
+                    <li>
+                        <a href="#pageSubmenu" data-bs-toggle="collapse" aria-expanded="false"
+                            class="dropdown-toggle">Facial
+                            Recognition</a>
+                        <ul class="collapse list-unstyled" id="pageSubmenu">
+                            <li>
+                                <a href="/edit_image">Recapture Image</a>
+                            </li>
+                            <li>
+                                <a href="/display_images_admin">View User Images</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="/proctor">Proctor</a>
+                    </li>
+                    <li>
+                        <a href="/display_images_admin">Users</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div id="content" class="p-4 p-md-5">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="btn btn-primary">
+                        <i class="fa fa-bars"></i>
+                        <span class="sr-only">Toggle Menu</span>
+                    </button>
+                    <button class="btn btn-dark d-inline-block d-lg-none ml-auto" type="button"
+                        data-bs-toggle="collapse" data-target="#navbarSportedContent"
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                    <h2 style="padding-left: 20px;">Proctoring System <h3>{% block Page %}{%endblock%}</h3>
+                    </h2>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="nav navbar-nav ml-auto">
+                            {%if not username%}
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="/login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/register">Register</a>
+                            </li>
+                            {%endif%}
+                            {%if username%}
+
+                            <div class="dropdown dropstart">
+                                <button type="button" class="fa-solid fa-user"
+                                    style="font-size: xx-large; padding-right: 2rem;" data-bs-toggle="dropdown">
+                                </button>
+
+                                <div class="dropdown-menu" style="width: 18rem;">
+                                    <div style="width: 18rem;">
+                                        <a class="nav-link" href="/edit_profile">Welcome! {{username}}</a>
+                                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
+
+                            {%endif%}
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+
+
+
+            <h2 class="mb-4">{% block top_navigation %} {% endblock %}</h2>
+
+
+
+            <h1>{{courseTitle}} <b>Results</b> </h1>
+            <h2> {{quizTitle}}</h2>
+
+            <div class="container">
+                <table id="data_table" class="table table-striped table-bordered">
+
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Mark</th>
+                            <th>Total Mark</th>
+                            <th>Percentage</th>
+                            
+                            <th>Proctor Duration</th>
+                            <th>Proctor Analysis</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {%for user in users%}
+                        <tr>
+
+
+                            <td>{{user.name}}</td>
+                            {% for mark in user.marks %}
+                            <td>
+
+                                {{ mark.mark }}
+
+                            </td>
+                            <td>
+                                {{ mark.totalmark }}
+                            </td>
+                            <td>
+                                {{mark.mark/ mark.totalmark * 100 }}
+                            </td>
+                            <td>
+                                {{mark.duration }}
+                            </td>
+                            {% endfor %}
+
+
+
+                            <td>10% Cheating</td>
+
+                            <td>
+                                <button type="button" class="btn btn-outline-success " data-bs-toggle="modal"
+                                    data-bs-target="#mymodal">View Graphs</button>
+                            </td>
+                        </tr>
+                        {%endfor%}
+
+                    </tbody>
+                </table>
+
+            </div>
+
+            <!-- Modal Create Exam-->
+           <div id="mymodal" class="modal fade" role="" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-lg">  <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Proctor Session Graphs</h4>
+      </div>
+      <div class="modal-body">
+        <img src="../static/graphs/cellphone.png" style="width: 100%;" alt="Cell Phone Graph">
+        <img src="../static/graphs/direction.png" style="width: 100%;" alt="Cell Phone Graph">
+        <img src="../static/graphs/identity.png" style="width: 100%;" alt="Cell Phone Graph">
+        <img src="../static/graphs/lips.png" style="width: 100%;" alt="Cell Phone Graph">
+        <img src="../static/graphs/liveness.png" style="width: 100%;" alt="Cell Phone Graph">
+        <img src="../static/graphs/numfaces.png" style="width: 100%;" alt="Cell Phone Graph">
+        <img src="../static/graphs/numPeople.png" style="width: 100%;" alt="Cell Phone Graph">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary"  data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+            <script>
+                $(document).ready(function () {
+                    $('#data_table').DataTable();
+                });
+            </script>
+            <script>
+                $(document).ready(function () {
+                    $("#sidebarCollapse").click(function (event) {
+                        event.stopPropagation(); // Prevent propagation from nested elements
+                        $("#sidebar").toggleClass("active"); // Add or remove "active" class for visibility
+                    });
+                });
+            </script>
+
+            <!-- Bootstrap Bundle with Popper -->
+            <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+            <!-- jQuery -->
+
+
+</body>

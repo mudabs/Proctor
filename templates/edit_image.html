@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Recapture Images{% endblock %}
+
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
+
+
+<h1>Facial Recognition</h1>
+<main>
+    <section class="d-flex align-items-center my-5 mt-lg-6 mb-lg-5">
+        <div class="container">
+            <div class="col-12 d-flex align-items-center justify-content-center">
+                <div class="bg-white shadow-soft border rounded border-light  p-5 p-lg-5 fmxw-650 align-items-center"
+                    style="width:60%">
+                    <div class="text-center text-md-center mb-4 mt-md-0">
+                        <h1 class="mb-0 h3">Recapture Image</h1>
+                    </div>
+                    <div class="card-body ">
+                        <form action="recaptureImage" id="myForm">
+                            <input type="hidden" name="usernameInput" id="name" value="{{user.name}}">
+                            
+                            <div class="mx-auto" id="my_camera" style="width: 100%;"></div>
+                            <br>
+                            <div class="d-flex justify-content-center"" id="results" style="width: 100%;"></div>
+                            <br>
+                            <button type="button" id="capture" class="btn btn-block btn-secondary">Capture Image</button>
+                            
+                            <input type="submit" id="myButton" class="btn btn-block btn-primary"
+                                value="Proceed to Capture Images">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+</main>
+
+<script>
+    Webcam.set({
+        width: 350,
+        height: 260,
+        image_format: 'jpeg',
+        jpeg_quality: 100
+    });
+    Webcam.attach('#my_camera');
+
+    document.getElementById('capture').addEventListener('click', function (event) {
+        event.preventDefault(); // Prevent form submission
+        take_snapshot();
+    });
+
+    function take_snapshot() {
+        Webcam.snap(function (data_uri) {
+            previewImage(data_uri);
+            sendImageToServer(data_uri);
+        });
+    }
+
+    function previewImage(data_uri) {
+        document.getElementById('results').innerHTML = '<img src="' + data_uri + '"/>';
+    }
+
+    function sendImageToServer(data_uri) {
+        var name = document.getElementById('name').value;
+        name = name + '.jpg'
+        const formData = new FormData(document.getElementById('myForm'));
+        formData.append('imageDataURL', data_uri);
+        formData.append('imageName', name);
+
+        fetch('/recaptureImage', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(result => {
+                console.log(result); // Check server response for success/errors
+                alert(result.message)
+            })
+            .catch(error => {
+                console.error('Error sending data:', error);
+            });
+    }
+
+    function captureImage() {
+        const name = document.getElementById('user').value;
+        const dataURI = Webcam.snap();
+        document.getElementById('results').innerHTML =
+            '<img src="' + dataURI + '"/>';
+        document.getElementById('captureForm').append(
+            '<input type="hidden" name="imageDataURL" value="' + dataURI + '">'
+        );
+        document.getElementById('captureForm').submit();
+    }
+</script>
+
+
+{% endblock %}

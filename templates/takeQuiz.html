@@ -1,0 +1,346 @@
+{% extends 'proctorbase.html' %}
+
+{% block title %} Quiz {% endblock %}
+
+{% block proctor %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+
+<script>
+    var objectValue; // Declare a variable to hold the single value
+
+    function updateObject() {
+        $.getJSON("/get_objects", function (data) {
+
+            
+            // Assuming the data is a single value (string, number, etc.)
+            objectValue = data;
+            var cellphone = objectValue[0];
+            var direction = objectValue[1];
+            var liveness = objectValue[2];
+            var lips = objectValue[3];
+            var facerecognition = objectValue[4];
+            var numPeople = objectValue[5];
+            var numFaces = objectValue[6];
+            var cheat = objectValue[7];
+            var message = '';
+            var messageTitle = '';
+            
+
+            console.log("cheat",cheat)
+            // Cellphone detection
+            $("#cellphone").html(cellphone); // Update the content directly
+            if (cellphone === "Cell Phone Detected") {
+                messageTitle = "Cell Phone Alert";
+                message = "Cell Phone Detected";
+                $("#mymodal").modal("show");
+            } else {
+                $("#mymodal").modal("hide");
+            }
+
+            // Head Pose Detection
+            $("#direction").html(direction);
+            
+            // Liveness Detection
+            if (liveness === "Fake") {
+                messageTitle = "Spoofing Alert";
+                message = "Spoofing Detected";
+                $("#mymodal").modal("show");
+            }
+            $("#liveness").html(liveness);
+
+            // Lips Detection
+            // if(lips === "Mouth Open"){
+            //     messageTitle = "Spoofing Alert";
+            //     message = "Please Stop Talking"
+            //     // $("#mymodal").modal("show");
+            // }
+            $("#lips").html(lips);
+            
+            // Facial Recognition Detection
+            // if(facerecognition === "Unknown"){
+            //     messageTitle = "User Alert"
+            //     message = "Unknown User Detected"
+            //     $("#mymodal").modal("show");
+            // }
+            $("#facerecognition").html(facerecognition);
+       
+ 
+            // People Counter
+            if (numPeople > 1) {
+                messageTitle = "Number Of People";
+                message = "Multiple people detected";
+                $("#mymodal").modal("show");
+            }
+            $("#numPeople").html(numPeople);
+
+            
+            // People Counter
+            if (numFaces > 1) {
+                messageTitle = "Number Of Faces";
+                message = "Multiple faces detected";
+                $("#mymodal").modal("show");
+            }
+            else if (numFaces == 0){
+                messageTitle = "Number Of Faces";
+                message = "No Faces detected";
+                $("#mymodal").modal("show");
+            }
+
+
+            // People Counter
+            $("#cheat").html(cheat);
+            console.log("Cheating Threshold = ", cheat)
+
+            let messageElement = document.getElementById("mymodal").querySelector(".modal-body");
+            messageElement.textContent = message;
+            let messageTitleElement = document.getElementById("mymodal").querySelector("modal-header");
+            messageTitleElement.textContent = messageTitle;
+        });
+    }
+
+    $(document).ready(function () {
+        updateObject();
+        setInterval(updateObject, 1000); // Update every second
+    });
+</script>
+
+
+<div style="position: fixed; top: 10px;">
+    <img id="video-feed" src="{{ url_for('video') }}" alt="Video Feed" style="width: 250px;">
+
+</div>
+
+<br><br><br><br><br><br>
+<div style="position: fixed;">
+
+    <h3 style="color: white;">Detected Objects</h3>
+    Cellphone : <ul style="color: white;" id="cellphone"></ul>
+    Head Direction : <ul style="color: white;" id="direction"></ul>
+    Spoofing : <ul style="color: white;" id="liveness"></ul>
+    Lip Distance: <ul style="color: white;" id="lips"></ul>
+    Identity : <ul style="color: white;" id="facerecognition"></ul>
+    Number Of People : <ul style="color: white;" id="numPeople"></ul>
+    Number Of Faces : <ul style="color: white;" id="numFaces"></ul>
+   <h4 style="color: white;">Cheat Threshold</h4>  : <ul style="color: white;" id="cheat"></ul>
+    
+</div>
+
+
+<div style="height: 100px; width: 50%;position: fixed; left: 10px;">
+    <div>
+        <!-- <h1 style="text-align: center; color: #fff;">Quiz Countdown</h1>  -->
+
+        <p id="timer" style="margin:0;width: 300px; position:fixed; bottom:10px"> <span id="remaining_time"></span></p>
+        <!-- <div id="text"></div> -->
+        <!-- <form action="/reset" method="post" class="">
+            <input type="submit" value="Reset Timer">
+        </form> -->
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+
+<!-- -----------------------------Modal Popup For Cheating -->
+
+
+<div class="modal fade" id="mymodal" tabindex="-1" role="dialog" aria-labelledby="cellphoneModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="cellphoneModalLabel">
+                    <h3>Cheating Detected!!!</h3>
+                </div>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                ${message}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- -----------------------------Modal Popup For Cheating -->
+<style>
+    #timer {
+        position: fixed;
+        margin-left: auto;
+        margin-right: auto;
+        left: 0;
+        right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        /* background-color: rgba(0, 0, 0, .5); */
+        color: #fff;
+        display: block;
+        margin-top: 1.2em;
+        margin-bottom: 0;
+        font-size: 3.5rem;
+        width: 4.6em;
+        text-align: center;
+        font-weight: bold;
+        border-radius: 5%;
+    }
+</style>
+
+
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalLabel">Messages</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="messageModalBody">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row" style="display: flex;">
+    <div class="row"
+        style="position: relative;margin-right: 0px;margin-left: 0px;left: 7px;padding-left: 0px; width: 99%;" s>
+        {%for q in quiz%}
+        <h1><b>{{q.topic}}</b></h1>
+        {%endfor%}
+
+    </div>
+
+    <br> <br>
+
+    <div class="row"
+        style="background-color: rgb(243, 238, 231); padding-left: 10px; position: relative;margin-right: 0px;margin-left: 0px;left: 7px;padding-left: 0px; width: 99%; height: 200px;">
+        <h2 style="padding: 10px;">Instructions</h2>
+        <br> <br> <br> <br>
+        {%for q in quiz%}
+
+        <h4 style="position: absolute; left: 0px; top: 50px; padding: 10px;">{{q.instructions}}</h4>
+
+        {%endfor%}
+        <h5 style="position: absolute; left: 0px; top: 150px; padding: 10px;">Number Of Questions: {{ questions|length
+            }} </h5>
+    </div>
+
+
+
+
+    <form action="{{ url_for('quizCompletion') }}" name="myform" id="myform" class="pt-3" method="post"
+        style="margin: 0 auto;">
+        {%for question in questions%}
+        <h3>{{loop.index}}. {{question.question}}</h3>
+
+        {%for q in quiz%}
+        <input type="hidden" name="quizId" value="{{q.id}}">
+        <input type="hidden" name="userId" value="{{userId}}">
+        {%endfor%}<br>
+
+        {%if question.answerType == "Essay"%}
+        <textarea name="mcq{{question.id}}" id="mcq{{question.id}}" cols="30" rows="30" class="form-control"></textarea>
+        {%endif%}
+
+        {%if question.answerType == "Short Answer"%}
+        <textarea name="mcq{{question.id}}" id="mcq{{question.id}}" cols="30" rows="15" class="form-control"></textarea>
+        {%endif%}
+
+        {%for answer in answers%}
+        {%if question.id == answer.questionId%}
+
+        <h4><input type="radio" name="mcq{{question.id}}" value="{{answer.answer}}" required>
+            {{answer.answer}}</h4>
+
+        {%endif%}
+        {%endfor%} <br>
+        <hr>
+        {%endfor%}
+
+        <a href="" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#quizModal">Submit
+            Answers</a>
+        <hr style="background-color: black; height:5px;">
+
+        <h2 style="text-align: center;">END OF QUIZ</h2>
+
+    </form>
+
+
+
+</div>
+
+
+
+
+<div class="modal fade" id="quizModal" tabindex="-1" aria-labelledby="quizModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quizModalLabel">Start Quiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to end the quiz session and are satisfied with your
+                    answers?</p>
+                <button type="submit" class="btn btn-success" form="myform">Submit Answers</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let remainingTimeElement = document.getElementById("remaining_time");
+    let textElement = document.getElementById("text");
+    function updateRemainingTime() {
+
+        fetch('/remaining_time')
+            .then(response => response.json())
+            .then(data => {
+
+                let minutes = Math.floor(data.remaining_time_in_seconds / 60);
+                let seconds = Math.floor(data.remaining_time_in_seconds % 60);
+                if (seconds < 10 && seconds >= 0) {
+                    seconds = "0" + seconds;
+                }
+
+                if (minutes < 1 && seconds == 0) {
+                    alert("Time Up");
+                    console.log("Time Up");
+                    window.location.href = '/';
+                }
+
+                remainingTimeElement.innerText = `${minutes}:${seconds}`;
+                document.getElementById("remaining_time").innerText = minutes + ":" + seconds;
+
+                textElement.textContent = remainingTimeElement.innerText;
+            })
+    }
+    setInterval(updateRemainingTime, 500);
+</script>
+
+
+<script>
+    window.onload = function () {
+        const messageModal = document.getElementById('messageModal');
+        const messageModalBody = document.getElementById('messageModalBody');
+        const sessionMessages = '{{ session["messages"] }}';  // Access session variable from Jinja template
+
+        if (sessionMessages) {
+            messageModalBody.textContent = sessionMessages;
+            messageModal.show();
+            // Clear session variable after displaying message (optional)
+            sessionStorage.setItem('clearMessages', true);  // Using sessionStorage for temporary state
+        }
+    };
+</script>
+
+
+
+
+{%endblock %}

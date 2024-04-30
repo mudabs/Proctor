@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="jumbotron p-3">
+                <h2>Manage <b>Users </b> <button type="button" class="btn btn-outline-success float-end"
+                        data-bs-toggle="modal" data-bs-target="#mymodalpopup">Add New User</button> </h2>
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+
+                {% for message in messages %}
+                <div class="alert alert-success alert-dismissible" role="alert">
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    {{message}}
+                </div>
+                {% endfor %}
+
+                {% endif %}
+                {% endwith %}
+
+                <table class="table table-hover table-striped">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>User Type</th>
+                        <th>Image Status</th>
+
+                        <th> </th>
+
+                    </tr>
+                    {% for user in Users %}
+                    <tr>
+
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.userType }}</td>
+                        <td>{{ user.imageStatus }}</td>
+                        <td>
+                            <a href="/update/{{user.id}}" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#modaledit{{user.id}}">Edit</a>
+                            <a href="/deleteUsers/{{user.id}}" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Are You Sure To Delete ?')">Delete</a>
+                            <a href="{{ url_for('assign_roles', user_id=user.id) }}"
+                                class="btn btn-secondary btn-sm">Manage Roles</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+
+
+                <!-- Modal Add User-->
+                <div id="mymodalpopup" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Add User</h4>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{url_for('createUsers')}}" method="POST">
+                                    <div class="form-group">
+                                        <label><b>Name</b>:</label>
+                                        <input type="text" class="form-control" name="name" required="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label><b>Email</b>:</label>
+                                        <input type="text" class="form-control" name="email" required="1">
+                                    </div>
+                                    <br>
+
+                                    <div class="form-group">
+
+                                        <label><b>User Type</b>:</label>
+                                        <select name="userType" class="form-control" id="">
+                                            <option value="student">Student</option>
+                                            <option value="teacher">Teacher</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <button class="btn btn-primary" type="submit">Add
+                                            User</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% for user in Users %}
+                <!-- Modal Edit User-->
+                <div id="modaledit{{user.id}}" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Update User</h4>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{url_for('updateUsers')}}" method="POST">
+                                    <div class="form-group">
+                                        <label><b>Name</b>:</label>
+                                        <input type="hidden" name="id" value="{{user.id}}">
+                                        <input type="text" class="form-control" name="name" value="{{user.name}}">
+                                    </div>
+                                    <br>
+                                    <div class="form-group">
+                                        <label><b>Email</b>:</label>
+                                        <input type="text" class="form-control" name="email" value="{{user.email}}">
+                                    </div>
+                                    <br>
+                                    <div class="form-group">
+                                        <button class="btn btn-primary" type="submit">Update
+                                            User</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<h3>Captured Image</h3>
+
+<br>
+<form id="myForm">
+    <select name="user_name" class="form-control" id="user-select">
+        <option value="">Select Name</option>
+        {% for option in Users %}
+        <option value="{{option.name}}">{{option.name}}</option>
+        {% endfor %}
+    </select>
+    <br>
+</form>
+<br>
+{% if message %}
+<p>{{ message }}</p>
+{% endif %}
+<div id="images" name="images">
+</div>
+
+
+<script>
+    $("#user-select").change(function () {
+        $.ajax({
+            url: "{{ url_for('get_images') }}", // Route for handling POST request
+            type: "POST",
+            data: { user_name: $(this).val() },
+            success: function (response) {
+                const data = JSON.parse(response);
+                $("#images").html(""); // Clear previous content
+
+                if (data.images.length === 0) {
+                    $("#images").append("<p>No Images Found</p>"); // Display message
+                } else {
+                    data.images.forEach(image => {
+                        $("#images").append("<img src='../static/images/known_images/" + image + "'alt='' style='height: 185px; width: 185px;'>");
+                    });
+                }
+            }
+        });
+    });
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Image Capture and Preview</title>
+</head>
+<body>
+  <video id="video" width="640" height="480" autoplay></video>
+  <button id="capture">Capture Image</button>
+  <input type="text" id="image-name" placeholder="Enter image name">
+  <canvas id="canvas"></canvas>
+  <img id="preview" src="" alt="Captured Image Preview">
+
+  <script>
+    // Access video and canvas elements
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const preview = document.getElementById('preview');
+
+    // Get user media (camera access)
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(error => {
+        console.error('Error accessing camera:', error);
+      });
+
+    // Capture image on button click
+    document.getElementById('capture').addEventListener('click', () => {
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageName = document.getElementById('image-name').value;
+      const imageDataURL = canvas.toDataURL('image/jpeg');
+
+      // Create a link element to trigger download
+      const link = document.createElement('a');
+      link.href = imageDataURL;
+      link.download = imageName + '.jpg';  // Add .jpg extension
+
+      // Simulate click to download the image (works in most browsers)
+      link.click();
+
+      // Display preview
+      preview.src = imageDataURL;
+    });
+  </script>
+</body>
+</html>

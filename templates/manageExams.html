@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %} Exam {% endblock %}
+
+{% block body %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="jumbotron p-3">
+                <h2>Manage <b>Exams </b> <button type="button" class="btn btn-outline-success float-end"
+                        data-bs-toggle="modal" data-bs-target="#mymodal">Add New Exam</button> </h2>
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+
+                {% for message in messages %}
+                <div class="alert alert-success alert-dismissible" role="alert">
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    {{message}}
+                </div>
+                {% endfor %}
+
+                {% endif %}
+                {% endwith %}
+
+                <table class="table table-hover table-striped">
+                    <tr>
+                        <th>Exam Code</th>
+                        <th>Course</th>
+                        <th>Exam Date</th>
+                        <th>Time</th>
+                        <th>Duration</th>
+                        <th> </th>
+
+                    </tr>
+                    {% for exam in exams %}
+                    <tr>
+                        <td>{{ exam.code }}</td>
+                        {% for course in courses %}
+                        {%if course.id == exam.courseId%}
+                        <td>{{ course.courseTitle }}</td>
+                        {%endif%}
+                        {%endfor%}
+                        <td>{{ exam.date.date() }}</td>
+                        <td>{{ exam.date.time() }}</td>
+                        <td>{{ exam.duration }} Hours</td>
+                        <td>
+                            <a href="/update/{{exam.id}}" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#modaledit{{exam.id}}">Add Questions</a>
+                            <a href="/update/{{exam.id}}" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#modaledit{{exam.id}}">Edit</a>
+                            <a href="/deleteExams/{{exam.id}}" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Are You Sure To Delete ?')">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+
+                <!-- Modal Create Exam-->
+                <div id="mymodal" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Create Exam</h4>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{url_for('createExams')}}" method="POST">
+                                    <div class="form-group">
+                                        <label><b>Exam Code</b>:</label>
+                                        <input type="text" class="form-control" name="examName" required="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label><b>Course</b>:</label>
+                                        <select name="courseId" id="" class="form-control">
+                                            {%for course in courses%}
+                                            <option value="{{course.id}}">
+                                                {{course.courseTitle}}
+                                            </option>
+                                            {%endfor%}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><b>Exam Date</b>:</label>
+                                        <input type="datetime-local" class="form-control" name="date" required="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label><b>Exam Duration</b>:</label>
+                                        <div class="d-flex">
+                                            <select name="durationHours" id="duration" class="form-control" style="margin-right: 10px;">
+                                                <option value="0">Hours</option>
+                                                {% for i in range(0, 11) %}
+                                                <option value="{{ i }}">{{ i }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <select name="durationMinutes" id="duration" class="form-control" style="margin-left: 10px;" required>
+                                                <option value="0">Minutes</option>
+                                                {% for i in range(0, 60) %}
+                                                <option value="{{ i }}">{{ i }}</option>
+                                                {% endfor %}
+                                            </select>
+
+                                        </div>
+                                    </div>
+                                    <br>
+                                    <div class="form-group">
+                                        <button class="btn btn-primary" type="submit">Add Exam</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% for exam in exams %}
+                <!-- Modal Edit Employee-->
+                <div id="modaledit{{exam.id}}" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Update Questions</h4>
+                            </div>
+                            <div class="modal-body">
+                                <form action="{{url_for('updateExams')}}" method="POST">
+                                    <div class="form-group">
+                                        <label>Question:</label>
+                                        <input type="hidden" name="id" value="{{exam.id}}">
+                                        <input type="text" class="form-control" name="name" value="{{exam.name}}">
+                                    </div>
+                                    <br>
+                                    <div class="form-group">
+                                        <button class="btn btn-primary" type="submit">Update</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{%endblock%}
