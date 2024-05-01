@@ -39,6 +39,7 @@ identity=''
 liveness = ''
 numPeople = 0
 numFaces = 0
+noise = 0
 
 # Capturing User Image details
 name=''
@@ -408,6 +409,7 @@ def load_known_faces():
       known_face_encodings.append(face_encoding)
       known_face_names.append(os.path.splitext(os.path.basename(filename))[0])
 
+me=''
 
 def video_detection():
     global cheat
@@ -418,6 +420,7 @@ def video_detection():
     global liveness
     global numPeople
     global numFaces
+    global me
 
 
     confidence = 0.5
@@ -533,6 +536,10 @@ def video_detection():
                         displayName = known_face_names[best_match_index]
 
                     face_names.append(displayName)
+                    if identity == me:
+                        pass
+                    else:
+                        face_names.append("Unknown")
                     identity = displayName
             else:
                 pass
@@ -751,8 +758,9 @@ soundThreshold = 0.5
 
 # Function to check sound level and save to file
 def check_sound(indata, frames, callback_time, status):
+    global noise
     volume_norm = np.linalg.norm(indata) * 2
-    
+    noise = volume_norm/2
     if volume_norm > soundThreshold:
         print(volume_norm)
         with open('sound.txt', 'a') as file:
@@ -1011,9 +1019,7 @@ def cheatingThreshold():
     global cellphone
     cellphoneLocal = 0.1
     if cellphone == "Cell Phone Detected":
-        cellphoneLocal = 5
-    else:
-        cellphoneLocal = 0.1
+        cellphoneLocal = 0.5
 
     global direction
     directionLocal=0.1
@@ -1026,21 +1032,21 @@ def cheatingThreshold():
     elif direction == "Looking Up":
         directionLocal = 0.55
     elif direction == "Looking Down":
-        directionLocal = 2
+        directionLocal = 0.6
 
     global liveness
     livenessLocal = 0.1
     if liveness == "real":
-        livenessLocal = 0.2
+        livenessLocal = 0.1
     else:
-        livenessLocal = 5
+        livenessLocal = 0.67
 
     global lips
     lipsLocal=0.1
     if lips == "Mouth Closed":
-        lipsLocal = 0.2
+        lipsLocal = 0.1
     else:
-        lipsLocal = 0.5
+        lipsLocal = 0.35
 
     global identity
     identityLocal=0.1
@@ -1048,14 +1054,14 @@ def cheatingThreshold():
         identityLocal = 0.1
     else:
         identity == "Unknown"
-        identityLocal = 5
+        identityLocal = 0.7
 
     global numPeople
     numPeopleLocal = 0.1
     if numPeople == 1:
         numPeopleLocal = 0.1
     else:
-        numPeopleLocal = 5
+        numPeopleLocal = 0.5
 
     global numFaces
     numFacesLocal=0.1
@@ -1064,8 +1070,17 @@ def cheatingThreshold():
     else:
         numFacesLocal = 0.5
 
-    universalCheat = (cellphoneLocal+directionLocal+livenessLocal+lipsLocal+identityLocal+numPeopleLocal+numFacesLocal)/7
+    global noise
+    noiseLocal=0.0
+    if noise > 0.2:
+        noiseLocal = 0.67
+    else:
+        noiseLocal = 0.2
 
+
+    # universalCheat = (cellphoneLocal+directionLocal+livenessLocal+lipsLocal+identityLocal+numPeopleLocal+numFacesLocal+noiseLocal)/8
+    universalCheat = calculate_score(cellphoneLocal, directionLocal, livenessLocal, lipsLocal, identityLocal, numPeopleLocal, numFacesLocal, noiseLocal)
+    print("universalCheat - ",universalCheat)
 
     # Get the current date and time
     now = datetime.now()
@@ -1088,6 +1103,53 @@ def cheatingThreshold():
 
 
     return universalCheat
+
+def calculate_score(cellphoneLocal, directionLocal, liveness, lipsLocal, identityLocal, numPeopleLocal, numFacesLocal, noiseLocal):
+  """
+  This function calculates a score based on input variables, with higher scores indicating a higher chance of cheating.
+
+  Args:
+      cellphoneLocal: (float) Local value for cellphone detection.
+      directionLocal: (float) Local value for direction detection. (Consider adjusting its weight if not relevant)
+      liveness: (float) Liveness detection value.
+      lipsLocal: (float) Local value for lips detection.
+      identityLocal: (float) Local value for identity detection.
+      numPeopleLocal: (float) Local value for number of people detected.
+      numFacesLocal: (float) Local value for number of faces detected.
+      noiseLocal: (float) Local value for noise level.
+
+  Returns:
+      (float) A score between 0 and 1, with higher values indicating a higher chance of cheating.
+  """
+
+  # Weights for each variable (adjust these based on your data and priorities)
+  cellphone_weight = cellphoneLocal
+  direction_weight = directionLocal  # Adjust weight if direction detection is not crucial
+  liveness_weight = liveness
+  lips_weight = lipsLocal
+  identity_weight = identityLocal
+  num_people_weight = numPeopleLocal  # Lower weight as presence of others might not indicate cheating
+  num_faces_weight = 0.1  # Lower weight for similar reason as num_people
+
+  # Adjust the logic for cellphone and face detection as needed
+  cellphone_penalty = 1 - cellphoneLocal  # Higher penalty for cellphone detection
+  no_face_penalty = 1 - numFacesLocal  # Higher penalty for no face detected
+
+  # Calculate the weighted sum with penalties
+  score = (cellphone_weight * cellphone_penalty) + \
+         (direction_weight * directionLocal) + \
+         (liveness_weight * liveness) + \
+         (lips_weight * lipsLocal) + \
+         (identity_weight * identityLocal) + \
+         (num_people_weight * numPeopleLocal) + \
+         (num_faces_weight * numFacesLocal) + \
+         (noiseLocal * 0.2)  # Add noise with lower weight
+
+  # Apply a threshold function to ensure the score is within the desired range (0-1)
+  score = min(score, 1)  # Cap the score at 1
+#   score = max(score, 0.96)  # Set a minimum score of 0.96 (can be adjusted)
+
+  return score
 
 
 # Video Route for Proctoring -- Called in proctor.html
@@ -1856,6 +1918,7 @@ def userResults(quizId):
 # Login------------------------------------------------------------------------------------------------------------------------------------------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    global me
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
@@ -1865,6 +1928,7 @@ def login():
             if user.password == password and user.userType == userType and user.email == email:
                 session['user_id'] = user.id
                 session['username'] = user.name
+                me = session['username']
                 flash('Login successful!', 'success')
                 return redirect(url_for('home'))
             else:
@@ -2275,7 +2339,7 @@ def unblock():
 
 
 
-
+# jnkdj
 
 
 
