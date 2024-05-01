@@ -2,6 +2,7 @@ import base64
 from datetime import datetime, timedelta
 import string
 from threading import Thread
+import threading
 from flask import Flask, flash ,render_template, Response, session, request, send_file, sessions
 import cv2
 from matplotlib import pyplot as plt
@@ -20,6 +21,11 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import orm
 import random
 from pytz import timezone
+import sounddevice as sd
+import numpy as np
+import time as timeSound
+import matplotlib.pyplot as plt
+
 
 # Load the pre-trained face detector and facial landmark predictor
 detector = dlib.get_frontal_face_detector()
@@ -380,6 +386,7 @@ os.makedirs(save_path, exist_ok=True)
 # Define the path to the hosts file
 hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
 
+stop_detection = False
 
 # HeadPose Estimation
 mp_face_mesh = mp.solutions.face_mesh
@@ -737,6 +744,55 @@ def video_detection():
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     cap.release()
+# /////////////////////Sound Detection
+
+# Define the soundThreshold for sound detection
+soundThreshold = 0.5
+
+# Function to check sound level and save to file
+def check_sound(indata, frames, callback_time, status):
+    volume_norm = np.linalg.norm(indata) * 2
+    
+    if volume_norm > soundThreshold:
+        print(volume_norm)
+        with open('sound.txt', 'a') as file:
+            file.write("{:.2f}\n".format( volume_norm ))
+    else:
+        print("0")
+        with open('sound.txt', 'a') as file:
+            file.write("0\n")
+
+
+def drawSoundGraph():
+    # Read data from sound.txt file
+    with open("sound.txt", "r") as file:
+        lines = file.readlines()
+
+    # Convert data to float
+    data = [float(line.strip()) for line in lines]
+
+    # Generate time values (1 second intervals)
+    time = [i for i in range(len(data))]
+
+    # Plot the graph
+    plt.plot(time, data)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Sound Level')
+    plt.title('Sound Level Over Time')
+    plt.grid(True)
+    
+    plt.savefig(f'./static/graphs/SoundGraph.png')
+    clearTextFile("./sound.txt")
+  
+def detectSound():
+    global stop_detection 
+    # Start sound capture
+    with sd.InputStream(callback=check_sound):
+        while not stop_detection:
+            timeSound.sleep(1)
+          
+
+# /////////////////////Sound Detection
 
 
 @app.route('/drawGraph', methods=['GET'])
@@ -752,29 +808,38 @@ def drawGraph():
     x_values = [time.split(':')[1:] for time in x_values]  # Extract only minutes and seconds
     x_values = [':' .join(time) for time in x_values]  # Reconstruct time strings
     # Extract y-axis values for each column
-    y_values = [[] for _ in range(7)]
+    y_values = [[] for _ in range(8)]
     for row in data:
-        for i in range(1, 7):
+        for i in range(1, 9):
             y_values[i-1].append(float(row[i]))
 
     # Plot graphs and save to file
-    for i in range(7):
-        values = ["identity","cellphone","direction","liveness","lips","numPeople","numFaces"]
-        plt.figure(figsize=(10, 6))
-        plt.plot(x_values, y_values[i])
-        plt.title(f'{values[i]}')
-        plt.xlabel('Time')
-        plt.xticks(rotation=90)
-        plt.ylabel(f'Data {i+1}')
-        plt.grid(True)
+    for i in range(8):
+        values = ["identity","cellphone","direction","liveness","lips","numPeople","numFaces","Overall Cheating"]
+        if y_values[i]:  # Check if y_values[i] is not empty
+            plt.figure(figsize=(10, 6))
+            plt.plot(x_values, y_values[i])
+            plt.title(f'{values[i]}')
+            plt.xlabel('Time')
+            plt.xticks(rotation=90)
+            plt.ylabel(f'Data {i+1}')
+            plt.grid(True)
 
 
-        plt.savefig(f'./static/graphs/{values[i]}.png')
-        plt.close()
+            plt.savefig(f'./static/graphs/{values[i]}.png')
+            print("Value - ",values[i])
+            plt.close()
+            clearTextFile("session.txt")
+        else:
+            print(f"Skipping plot for {values[i]} due to empty data.")
 
     print("Graphs saved successfully.")
 
+def clearTextFile(file_path):
 
+    # Open the file in write mode, which truncates the file
+    with open(file_path, "w") as file:
+        pass  # Do nothing, effectively clearing the file
 
 @app.route('/humidity', methods=['GET'])
 def humidity():
@@ -920,15 +985,24 @@ def get_objects():
     print("Identity:", identity)
     return jsonify(cellphone,direction,liveness,lips,identity,numPeople, numFaces, cheat)
 
-# def write_exam_session(time,identity, cellphone, direction, liveness, lips, numPeople,numFaces,universalCheat,duration):
-def write_exam_session(time,identity, cellphone, direction, liveness, lips, numPeople,numFaces):
-  filename="./session.txt"
-  data = f"{time},{identity},{cellphone},{direction},{liveness}, {lips}, {numPeople},{numFaces}\n"
-#   data = f"{time},{identity},{cellphone},{direction},{liveness}, {lips}, {numPeople},{numFaces},{universalCheat},{duration}\n"
+def write_exam_session(identity, cellphone, direction, liveness, lips, numPeople,numFaces):
+# def write_exam_session():
+    global cheat
+    filename="./session.txt"
+    # Get the current date and time
+    now = datetime.now()
 
-  # Open the file in append mode ('a')
-  with open(filename, "a") as file:
-    file.write(data)
+    # Get only the current time (hours, minutes, seconds, microseconds)
+    current_time = now.time()
+
+
+
+    data = f"{current_time},{identity},{cellphone},{direction},{liveness}, {lips}, {numPeople},{numFaces},{cheat}\n"
+    #   data = f"{time},{identity},{cellphone},{direction},{liveness}, {lips}, {numPeople},{numFaces},{universalCheat},{duration}\n"
+
+    # Open the file in append mode ('a')
+    with open(filename, "a") as file:
+        file.write(data)
 
 @app.route('/cheatingThreshold')
 def cheatingThreshold():
@@ -1008,8 +1082,9 @@ def cheatingThreshold():
 
     universalCheat=round(universalCheat,1)
 
-    # write_exam_session(current_time,numPeopleLocal, cellphoneLocal, directionLocal, livenessLocal, lipsLocal, numPeopleLocal,numFacesLocal,universalCheat,session['myDuration'])
-    write_exam_session(current_time,numPeopleLocal, cellphoneLocal, directionLocal, livenessLocal, lipsLocal, numPeopleLocal,numFacesLocal)
+    # write_exam_session(identityLocal, cellphoneLocal, directionLocal, livenessLocal, lipsLocal, numPeopleLocal,numFacesLocal,universalCheat,session['myDuration'])
+    write_exam_session(identityLocal, cellphoneLocal, directionLocal, livenessLocal, lipsLocal, numPeopleLocal,numFacesLocal)
+    # write_exam_session()
 
 
     return universalCheat
@@ -1547,7 +1622,7 @@ def manageResults(quizId):
 
     # users = User.query.all()
     # marks = Marks.query.filter_by(quizId = quizId)
-    users = User.query.join(Marks, User.id == Marks.userId).filter(Marks.quizId == quizId).first()
+    users = User.query.join(Marks, User.id == Marks.userId).filter(Marks.quizId == quizId).all()
     marks = Marks.query.join(User, Marks.userId == User.id).filter(Marks.quizId == quizId).all()
 
     return render_template("manageResults.html",courseTitle=courseTitle,quizTitle=quizTitle,users=users)
@@ -1653,7 +1728,7 @@ def setTimer(quizId):
 
 @app.route('/takeQuiz/<quizId>')
 def takeQuiz(quizId):
-
+    global stop_detection
     quiz = Quiz.query.filter_by(id = quizId).all()
     questionLink = QuizQuestions.query.filter_by(quizId = quizId).all()
     questions = Questions.query.filter_by(quizId=quizId).all()
@@ -1667,15 +1742,26 @@ def takeQuiz(quizId):
     numQuestions = len(questions)
 
     now_with_timezone = datetime.now(user_timezone)
+
+    # Start sound detection in a separate thread
+    sound_thread = threading.Thread(target=detectSound)
+    sound_thread.start()
+
+
     if now_with_timezone > session['expiration_time']:
         # Handle quiz expiration (e.g., redirect to a different page, display a message)
-        return redirect(url_for('home'))  # Example redirect
+        stop_detection = True
         drawGraph()
+        drawSoundGraph()
+        return redirect(url_for('home'))  # Example redirect
+    
     return render_template("takeQuiz.html",quiz=quiz,quizId=quizId,questionLink=questionLink,questions=questions,answers=answers,numQuestions=numQuestions,userId = session['user_id'])
 
 # Submit Exam
 @app.route('/quizCompletion', methods=['POST'])
 def quizCompletion():
+    global stop_detection 
+    stop_detection = True
 
     if request.method == 'POST':
         unblock()
@@ -1726,6 +1812,7 @@ def quizCompletion():
         db.session.commit()
 
         drawGraph()
+        drawSoundGraph()
         
 
     return redirect(url_for('userResults',quizId=quizId))
