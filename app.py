@@ -1010,7 +1010,7 @@ def cheatingThreshold():
 
     global cellphone
     cellphoneLocal = 0.1
-    if cellphone == "Detected":
+    if cellphone == "Cell Phone Detected":
         cellphoneLocal = 5
     else:
         cellphoneLocal = 0.1
