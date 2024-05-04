@@ -25,6 +25,7 @@ import sounddevice as sd
 import numpy as np
 import time as timeSound
 import matplotlib.pyplot as plt
+from collections import deque
 
 
 # Load the pre-trained face detector and facial landmark predictor
@@ -174,9 +175,16 @@ class CorrectAnswers(db.Model):
 class ProctorSession(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     userId = db.Column(db.Integer, db.ForeignKey('user.id'))
-    cheating = db.Column(db.Integer, db.ForeignKey('user.id', ondelete="SET NULL"))
     percentage = db.Column(db.String(255))
-    time = db.Column(db.String(255))
+    time = db.Column(db.DateTime(255))
+
+    def __init__(self, userId, percentage, time):  # Accept both arguments
+        self.userId = userId
+        self.percentage = percentage
+        self.time = time
+
+    def __repr__(self):
+        return f"<Answer {self.percentage}>"
 
 class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -410,6 +418,7 @@ def load_known_faces():
       known_face_names.append(os.path.splitext(os.path.basename(filename))[0])
 
 me=''
+cheating_scores = deque(maxlen=None)
 
 def video_detection():
     global cheat
@@ -806,7 +815,7 @@ def detectSound():
 @app.route('/drawGraph', methods=['GET'])
 def drawGraph():
     # Read data from file
-    file_path = "./session.txt"
+    file_path = './session.txt'
     data = []
     with open(file_path, 'r') as file:
         for line in file:
@@ -832,7 +841,6 @@ def drawGraph():
             plt.xticks(rotation=90)
             plt.ylabel(f'Data {i+1}')
             plt.grid(True)
-
 
             plt.savefig(f'./static/graphs/{values[i]}.png')
             print("Value - ",values[i])
@@ -1015,6 +1023,7 @@ def write_exam_session(identity, cellphone, direction, liveness, lips, numPeople
 @app.route('/cheatingThreshold')
 def cheatingThreshold():
     universalCheat = 0
+    global cheating_scores
 
     global cellphone
     cellphoneLocal = 0.1
@@ -1080,22 +1089,24 @@ def cheatingThreshold():
 
     # universalCheat = (cellphoneLocal+directionLocal+livenessLocal+lipsLocal+identityLocal+numPeopleLocal+numFacesLocal+noiseLocal)/8
     universalCheat = calculate_score(cellphoneLocal, directionLocal, livenessLocal, lipsLocal, identityLocal, numPeopleLocal, numFacesLocal, noiseLocal)
+    cheating_scores.append(universalCheat)
     print("universalCheat - ",universalCheat)
 
+
     # Get the current date and time
-    now = datetime.now()
+    # now = datetime.now()
 
     # Get only the current time (hours, minutes, seconds, microseconds)
-    current_time = now.time()
+    # current_time = now.time()
 
     # Print the current time in a specific format (e.g., HH:MM:SS)
-    print(current_time.strftime("%H:%M:%S"))
+    # print(current_time.strftime("%H:%M:%S"))
 
 
-    if universalCheat > 1:
-        universalCheat = 1
+    # if universalCheat > 1:
+    #     universalCheat = 1
 
-    universalCheat=round(universalCheat,1)
+    # universalCheat=round(universalCheat,1)
 
     # write_exam_session(identityLocal, cellphoneLocal, directionLocal, livenessLocal, lipsLocal, numPeopleLocal,numFacesLocal,universalCheat,session['myDuration'])
     write_exam_session(identityLocal, cellphoneLocal, directionLocal, livenessLocal, lipsLocal, numPeopleLocal,numFacesLocal)
@@ -1142,7 +1153,7 @@ def calculate_score(cellphoneLocal, directionLocal, liveness, lipsLocal, identit
          (lips_weight * lipsLocal) + \
          (identity_weight * identityLocal) + \
          (num_people_weight * numPeopleLocal) + \
-         (num_faces_weight * numFacesLocal) + \
+         (num_faces_weight * no_face_penalty) + \
          (noiseLocal * 0.2)  # Add noise with lower weight
 
   # Apply a threshold function to ensure the score is within the desired range (0-1)
@@ -1685,9 +1696,14 @@ def manageResults(quizId):
     # users = User.query.all()
     # marks = Marks.query.filter_by(quizId = quizId)
     users = User.query.join(Marks, User.id == Marks.userId).filter(Marks.quizId == quizId).all()
+    # users = User.query.join(Marks, User.id == Marks.userId).outerjoin(ProctorSession, ProctorSession.userId == User.id).filter(Marks.quizId == quizId).all()
     marks = Marks.query.join(User, Marks.userId == User.id).filter(Marks.quizId == quizId).all()
+    cheatthreshold = ProctorSession.query.all()
 
-    return render_template("manageResults.html",courseTitle=courseTitle,quizTitle=quizTitle,users=users)
+
+   
+
+    return render_template("manageResults.html",courseTitle=courseTitle,quizTitle=quizTitle,users=users,cheatthreshold=cheatthreshold)
 
 @app.route('/fetch_data', methods=['GET'])
 def fetch_data():
@@ -1819,14 +1835,17 @@ def takeQuiz(quizId):
     
     return render_template("takeQuiz.html",quiz=quiz,quizId=quizId,questionLink=questionLink,questions=questions,answers=answers,numQuestions=numQuestions,userId = session['user_id'])
 
+average_threshold = None
 # Submit Exam
 @app.route('/quizCompletion', methods=['POST'])
 def quizCompletion():
-    global stop_detection 
+    global stop_detection, cheating_scores, average_threshold
     stop_detection = True
-
+    quizName =''
+    courseName =''
     if request.method == 'POST':
         unblock()
+
         attemptedAnswers=[]
         status="0"
         totalmarks = 0
@@ -1838,7 +1857,13 @@ def quizCompletion():
         mark=0
         correctAnswers = CorrectAnswers.query.filter_by(quizId=quizId).all()
         questions = Questions.query.filter_by(quizId=quizId).all()
-
+        quizes = Quiz.query.filter_by(id=quizId).all()
+        for q in quizes:
+            course = Course.query.filter_by(id = q.courseId).all()
+            for c in course:
+                if c.id == q.courseId:
+                    quizName = q.topic
+                    courseName = c.courseTitle
 
 
         for question in questions:
@@ -1875,6 +1900,19 @@ def quizCompletion():
 
         drawGraph()
         drawSoundGraph()
+        # Calculate average cheating threshold (if any scores exist)
+        
+        if cheating_scores:
+            average_threshold = sum(cheating_scores) / len(cheating_scores)
+            if (average_threshold < 0.6):
+                average_threshold = average_threshold - 0.3
+            print(f"Average cheating threshold: {average_threshold}")
+            now = datetime.now()
+
+            my_data = ProctorSession(session['user_id'],average_threshold,now)
+            db.session.add(my_data)
+            db.session.commit()
+
         
 
     return redirect(url_for('userResults',quizId=quizId))
@@ -2278,70 +2316,6 @@ def unblock():
     
     flash('Websites unblocked successfully', 'success')
     return redirect(url_for('blacklist'))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# jnkdj
-
-
 
 
 if __name__ == '__main__':
