@@ -50,9 +50,38 @@ A Flask web application that monitors students during online exams using real-ti
 - A webcam
 - dlib wheel (included in `models/`) — required because building from source needs CMake and a C++ compiler
 
+> **Hardware disclaimer:** Proctoring uses PyTorch, YOLO, MediaPipe, dlib, and
+> face recognition. A CUDA-enabled NVIDIA GPU is strongly recommended and may
+> be required for reliable real-time performance. CPU-only systems may run very
+> slowly or fail to run the full detection pipeline; CPU-only execution is not
+> guaranteed.
+
 ## Setup
 
-### 1. Database
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/mudabs/Proctor.git
+cd Proctor
+```
+
+### 2. Create and activate a virtual environment
+
+Windows PowerShell:
+
+```powershell
+py -3.11 -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+macOS/Linux:
+
+```bash
+python3.11 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Create the database
 
 Import the provided SQL dump:
 
@@ -66,7 +95,7 @@ Or create the database first if it does not exist:
 CREATE DATABASE proctoring;
 ```
 
-### 2. Download required model files
+### 4. Download required model files
 
 Place the following files in the `models/` directory (not included in the repo due to size):
 
@@ -77,30 +106,44 @@ Place the following files in the `models/` directory (not included in the repo d
 | `best_20.pt` | Custom liveness detection model |
 | `TrainingImageLabel/Trainner.yml` | LBPH face recogniser (generated after capturing student images) |
 
-### 3. Install dependencies
+### 5. Install dependencies
 
 ```bash
+python -m pip install --upgrade pip
 pip install models/dlib-19.24.1-cp311-cp311-win_amd64.whl
 pip install -r requirements.txt
 ```
 
 > The `dlib` wheel must be installed **before** the rest of the requirements because `face-recognition` depends on it.
 
-### 4. Configure the application
+### 6. Configure the application
 
-In `app.py`, update the database URI if your MySQL credentials differ:
+Set the database URI and a secret key through environment variables. Windows
+PowerShell:
 
-```python
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/proctoring'
+```powershell
+$env:PROCTOR_DATABASE_URI = "mysql://root:your_password@localhost/proctoring"
+$env:PROCTOR_SECRET_KEY = "replace-with-a-long-random-secret"
 ```
 
-### 5. Run
+macOS/Linux:
+
+```bash
+export PROCTOR_DATABASE_URI='mysql://root:your_password@localhost/proctoring'
+export PROCTOR_SECRET_KEY='replace-with-a-long-random-secret'
+```
+
+The application defaults to `mysql://root:@localhost/proctoring` if
+`PROCTOR_DATABASE_URI` is not set.
+
+### 7. Run
 
 ```bash
 python run.py
 ```
 
-The app will be available at `http://localhost:5000`.
+Open `http://localhost:5000` in a browser. Keep the terminal running while
+using the application. To stop the server, press `Ctrl+C`.
 
 ## Project Structure
 
@@ -109,7 +152,9 @@ the `proctor/` package. `app.py` remains as a compatibility module while the
 remaining shared infrastructure is migrated.
 
 ```
-app.py                  # Application entry point — routes, models, detection logic
+app.py                  # Flask composition module and compatibility routes
+run.py                  # Development/production startup entrypoint
+proctor/                # Modular auth, courses, admin, and proctoring code
 proctoring.sql          # Database schema and seed data
 requirements.txt        # Python dependencies
 models/                 # ML models and face detection cascades
