@@ -1,21 +1,17 @@
 """Proctoring HTTP routes backed by the detection module."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from flask import Response, jsonify, render_template, request, session
+from flask import Response, flash, jsonify, redirect, render_template, request, session, url_for
 
 from . import proctoring
 from . import detection
 from proctor import state
+from proctor.admin.routes import block_websites, unblock_websites
+from proctor.extensions import db
+from proctor.models import Blocked
 
-
-def write_exam_session(identity, cellphone, direction, liveness, lips, num_people, num_faces):
-    data = (
-        f"{datetime.now().time()},{identity},{cellphone},{direction},"
-        f"{liveness}, {lips}, {num_people},{num_faces},{detection.cheat}\n"
-    )
-    with open("./session.txt", "a") as session_file:
-        session_file.write(data)
+from app import app
 
 
 def cheating_threshold():
@@ -44,7 +40,7 @@ def cheating_threshold():
         noise_local,
     )
     state.cheating_scores.append(score)
-    write_exam_session(
+    detection.write_exam_session(
         identity_local,
         cellphone_local,
         direction_local,
@@ -96,3 +92,67 @@ def video():
         detection.video_detection(),
         mimetype='multipart/x-mixed-replace; boundary=frame',
     )
+
+
+def get_remaining_time_in_seconds():
+    expiration_time = session.get("expiration_time")
+    if not expiration_time:
+        return 0
+    remaining_time = app.config['expiration_time'] - datetime.now()
+    return remaining_time.total_seconds()
+
+
+@proctoring.route('/remaining_time')
+def remaining_time():
+    remaining_time_in_seconds = get_remaining_time_in_seconds()
+    if remaining_time_in_seconds <= 0:
+        session["messages"] = "Time is up"
+        return reset()
+    return jsonify({'remaining_time_in_seconds': remaining_time_in_seconds})
+
+
+@proctoring.route('/reset', methods=['POST'])
+def reset():
+    session['quiz'] = "False"
+    app.config['expiration_time'] = datetime.now() + timedelta(minutes=10)
+    return render_template('home.html')
+
+
+@proctoring.route('/clearTimer', methods=['POST'])
+def clearTimer():
+    app.config['expiration_time'] = ''
+    return redirect(url_for('home'))
+
+
+@proctoring.route('/blacklist', methods=['GET', 'POST'])
+def blacklist():
+    if request.method == 'POST':
+        blocked_websites = [
+            "researchgate.net", "scholar.google.com", "pubmed.ncbi.nlm.nih.gov",
+            "ieeexplore.ieee.org", "sciencedirect.com", "jstor.org",
+            "link.springer.com", "onlinelibrary.wiley.com", "arxiv.org", "ssrn.com",
+            "nature.com", "elsevier.com", "dl.acm.org", "scopus.com", "plos.org",
+            "academic.oup.com", "tandfonline.com", "research.com", "researcher.com",
+            "worldcat.org", "google.com", "bing.com", "yahoo.com", "duckduckgo.com",
+            "baidu.com", "yandex.com", "ask.com", "ecosia.org", "startpage.com",
+            "swisscows.com",
+        ]
+        for url in blocked_websites:
+            db.session.add(Blocked(url=url))
+        db.session.commit()
+        unblock_websites()
+        block_websites()
+        flash('Websites blocked successfully', 'success')
+        return redirect(url_for('blacklist'))
+
+    blocked_urls = Blocked.query.all()
+    return render_template('blacklist.html', blocked_urls=blocked_urls)
+
+
+@proctoring.route('/unblock', methods=['POST'])
+def unblock():
+    unblock_websites()
+    Blocked.query.delete()
+    db.session.commit()
+    flash('Websites unblocked successfully', 'success')
+    return redirect(url_for('blacklist'))

@@ -264,63 +264,6 @@ def deleteImages():
                     print("Removed file ",image)
     return redirect(url_for('captureImageReg'))
 
-# Homepage route
-@admin.route('/blacklist', methods=['GET', 'POST'])
-def blacklist():
-    if request.method == 'POST':
-        # urls = request.form.get('urls')
-        # if urls:
-            # Split the input by newline and remove empty lines
-            # urls = [url.strip() for url in urls.split('\n') if url.strip()]
-        blocked_websites = [
-            "researchgate.net",
-            "scholar.google.com",
-            "pubmed.ncbi.nlm.nih.gov",
-            "ieeexplore.ieee.org",
-            "sciencedirect.com",
-            "jstor.org",
-            "link.springer.com",
-            "onlinelibrary.wiley.com",
-            "arxiv.org",
-            "ssrn.com",
-            "nature.com",
-            "elsevier.com",
-            "dl.acm.org",
-            "scopus.com",
-            "plos.org",
-            "academic.oup.com",
-            "tandfonline.com",
-            "research.com",
-            "researcher.com",
-            "worldcat.org",
-            "google.com",
-            "bing.com",
-            "yahoo.com",
-            "duckduckgo.com",
-            "baidu.com",
-            "yandex.com",
-            "ask.com",
-            "ecosia.org",
-            "startpage.com",
-            "swisscows.com"
-        ]
-
-        # Add the URLs to the database
-        for url in blocked_websites:
-            blocked = Blocked(url=url)
-            db.session.add(blocked)
-        db.session.commit()
-        # Block websites after adding them to the database
-        unblock_websites()
-        block_websites()
-        flash('Websites blocked successfully', 'success')
-        return redirect(url_for('blacklist'))
-    
-    # Fetch all blocked URLs from the database
-    blocked_urls = Blocked.query.all()
-    return render_template('blacklist.html', blocked_urls=blocked_urls)
-
-@admin.route('/black')
 def black():
     blocked_websites = [
         "researchgate.net",
@@ -369,7 +312,6 @@ def black():
 
 
 # Route to unblock all websites
-@admin.route('/unblock', methods=['POST'])
 def unblock():
     unblock_websites()
     # Delete all records from the Blocked table

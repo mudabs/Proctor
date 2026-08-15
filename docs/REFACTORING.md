@@ -23,10 +23,12 @@ against the original application behavior.
 - Authentication routes live in `proctor/auth/routes.py`.
 - Course, question, exam, quiz, timer, and result routes live in
   `proctor/courses/routes.py`.
-- Proctoring routes and detection state now live in `proctor/proctoring/`.
+- Proctoring routes, detection state, and exam-session recording now live in
+  `proctor/proctoring/`.
 - Administration, role management, image management, and blacklist routes now
   live in `proctor/admin/`.
-- The blacklist has one owner: the administration blueprint.
+- Blacklist HTTP routes now belong to the proctoring blueprint; the admin
+  module retains only reusable host-file helpers used by quiz setup.
 - Runtime stop and score buffers are centralized in `proctor/state.py`, so the
   quiz flow, sound loop, and proctoring routes share the same state.
 - Each quiz resets that shared state, allowing a later attempt in the same

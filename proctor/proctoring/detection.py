@@ -6,6 +6,7 @@ import face_recognition
 import mediapipe as mp
 import numpy as np
 import os
+from datetime import datetime
 from ultralytics import YOLO
 
 from app import app
@@ -43,6 +44,15 @@ known_faces_dir = "./static/images/known_images/"
 # Load all known faces and their encodings
 known_face_encodings = []
 known_face_names = []
+
+
+def write_exam_session(identity, cellphone, direction, liveness, lips, num_people, num_faces):
+    data = (
+        f"{datetime.now().time()},{identity},{cellphone},{direction},"
+        f"{liveness}, {lips}, {num_people},{num_faces},{cheat}\n"
+    )
+    with open("./session.txt", "a") as session_file:
+        session_file.write(data)
 
 def load_known_faces():
   global known_face_encodings, known_face_names

@@ -349,36 +349,6 @@ def get_images_profile():
 
 #     return render_template("manageQuestions.html", questions=questions, answers=answers, courses=courses, lecturers=lecturers)
 
-def get_remaining_time_in_seconds():
-    if session["expiration_time"]:
-        remaining_time = app.config['expiration_time'] - datetime.now()
-        remaining_time_in_seconds = remaining_time.total_seconds()
-    return remaining_time_in_seconds
-
-@app.route('/remaining_time')
-def remaining_time():
-    remaining_time_in_seconds = get_remaining_time_in_seconds()
-    if remaining_time_in_seconds <= 0:
-        session["messages"] = "Time is up"
-        reset()
-    return jsonify({'remaining_time_in_seconds': remaining_time_in_seconds})
-
-@app.route('/reset', methods=['POST'])
-def reset():
-
-    if request.method == 'POST':
-        session['quiz'] = "False"
-        app.config['expiration_time'] = datetime.now() + timedelta(minutes=10)
-        return render_template('home.html')
-
-@app.route('/clearTimer', methods=['POST'])
-def clearTimer():
-    if request.method == 'POST':
-        app.config['expiration_time'] = ''
-
-        return redirect(url_for('home'))
-
-
 from proctor.courses import courses
 from proctor.proctoring import proctoring
 app.register_blueprint(courses, name="courses")
