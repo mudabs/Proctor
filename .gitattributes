@@ -1,0 +1,8 @@
+# Exclude vendored CSS/JS libraries from language stats
+static/css/**          linguist-vendored
+static/js/**           linguist-vendored
+static/webcamjs/**     linguist-vendored
+static/font-awesome/** linguist-vendored
+
+# Exclude Jinja2 templates (HTML) from language stats
+templates/**           linguist-documentation

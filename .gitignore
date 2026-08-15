@@ -1,0 +1,12 @@
+venv/
+requirements_clean.txt
+
+# Large model files — download separately (see README)
+models/shape_predictor_68_face_landmarks.dat
+models/shape_predictor_68_face_landmarks.dat.bz2
+models/yolov8n.pt
+models/TrainingImageLabel/
+
+# Generated at runtime
+static/images/known_images/
+static/graphs/
