@@ -3,7 +3,6 @@
 import random
 import string
 import threading
-from collections import deque
 from datetime import datetime
 
 from flask import flash, jsonify, redirect, render_template, request, session, url_for
@@ -16,6 +15,7 @@ from app import (
     drawSoundGraph,
 )
 from proctor.admin.routes import black, unblock
+from proctor import state
 from proctor.extensions import db
 from proctor.models import (
     Answers, CorrectAnswers, Course, Enrollment, Exam, Lecturers, Marks,
@@ -23,8 +23,6 @@ from proctor.models import (
 )
 from . import courses
 
-stop_detection = False
-cheating_scores = deque(maxlen=None)
 average_threshold = None
 # Course---------------------------------------------------------------------------------------------------------------------------------------------
 #insert data to mysql database via html forms
@@ -302,7 +300,6 @@ def setTimer(quizId):
 
 @courses.route('/takeQuiz/<quizId>')
 def takeQuiz(quizId):
-    global stop_detection
     quiz = Quiz.query.filter_by(id = quizId).all()
     questionLink = QuizQuestions.query.filter_by(quizId = quizId).all()
     questions = Questions.query.filter_by(quizId=quizId).all()
@@ -317,6 +314,10 @@ def takeQuiz(quizId):
 
     now_with_timezone = datetime.now(user_timezone)
 
+    # Reset shared proctoring state for each quiz attempt.
+    state.stop_detection = False
+    state.cheating_scores.clear()
+
     # Start sound detection in a separate thread
     sound_thread = threading.Thread(target=detectSound)
     sound_thread.start()
@@ -324,7 +325,7 @@ def takeQuiz(quizId):
 
     if now_with_timezone > session['expiration_time']:
         # Handle quiz expiration (e.g., redirect to a different page, display a message)
-        stop_detection = True
+        state.stop_detection = True
         drawGraph()
         drawSoundGraph()
         return redirect(url_for('home'))  # Example redirect
@@ -335,8 +336,8 @@ average_threshold = None
 # Submit Exam
 @courses.route('/quizCompletion', methods=['POST'])
 def quizCompletion():
-    global stop_detection, cheating_scores, average_threshold
-    stop_detection = True
+    global average_threshold
+    state.stop_detection = True
     quizName =''
     courseName =''
     if request.method == 'POST':
@@ -398,8 +399,8 @@ def quizCompletion():
         drawSoundGraph()
         # Calculate average cheating threshold (if any scores exist)
         
-        if cheating_scores:
-            average_threshold = sum(cheating_scores) / len(cheating_scores)
+        if state.cheating_scores:
+            average_threshold = sum(state.cheating_scores) / len(state.cheating_scores)
             if (average_threshold < 0.6):
                 average_threshold = average_threshold - 0.3
             print(f"Average cheating threshold: {average_threshold}")

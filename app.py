@@ -25,7 +25,6 @@ liveness = ''
 numPeople = 0
 numFaces = 0
 noise = 0
-stop_detection = False
 
 # Capturing User Image details
 name=''
@@ -121,10 +120,9 @@ def drawSoundGraph():
     clearTextFile("./sound.txt")
   
 def detectSound():
-    global stop_detection 
     # Start sound capture
     with sd.InputStream(callback=check_sound):
-        while not stop_detection:
+        while not state.stop_detection:
             timeSound.sleep(1)
           
 

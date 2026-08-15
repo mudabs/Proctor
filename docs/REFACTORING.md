@@ -27,13 +27,17 @@ against the original application behavior.
 - Administration, role management, image management, and blacklist routes now
   live in `proctor/admin/`.
 - The blacklist has one owner: the administration blueprint.
+- Runtime stop and score buffers are centralized in `proctor/state.py`, so the
+  quiz flow, sound loop, and proctoring routes share the same state.
+- Each quiz resets that shared state, allowing a later attempt in the same
+  process to start a fresh detection loop and score history.
 
 ## Validation policy
 
-Every stage must pass Python compilation and `git diff --check`. Full runtime
-validation requires MySQL/MariaDB credentials, the webcam, and the model files
-listed in the README. Those environment-dependent checks are documented in the
-corresponding pull request rather than hidden behind a failing local import.
+Every stage must pass Python compilation and `git diff --check`. The completed
+refactor also passes an SQLite in-memory import smoke test and confirms the
+legacy route aliases remain registered. Full runtime validation requires
+MySQL/MariaDB credentials, the webcam, and the model files listed in the README.
 
 ## Target layout
 

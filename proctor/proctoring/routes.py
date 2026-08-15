@@ -43,7 +43,7 @@ def cheating_threshold():
         faces_local,
         noise_local,
     )
-    detection.cheating_scores.append(score)
+    state.cheating_scores.append(score)
     write_exam_session(
         identity_local,
         cellphone_local,

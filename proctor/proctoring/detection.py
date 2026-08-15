@@ -6,7 +6,6 @@ import face_recognition
 import mediapipe as mp
 import numpy as np
 import os
-from collections import deque
 from ultralytics import YOLO
 
 from app import app
@@ -24,7 +23,6 @@ liveness = ""
 numPeople = 0
 numFaces = 0
 noise = 0
-stop_detection = False
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 
 # Specify the path to save the images
@@ -34,7 +32,6 @@ os.makedirs(save_path, exist_ok=True)
 # Define the path to the hosts file
 hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
 
-stop_detection = False
 
 # HeadPose Estimation
 mp_face_mesh = mp.solutions.face_mesh
@@ -56,7 +53,6 @@ def load_known_faces():
       known_face_encodings.append(face_encoding)
       known_face_names.append(os.path.splitext(os.path.basename(filename))[0])
 
-cheating_scores = deque(maxlen=None)
 
 def video_detection():
     global cheat
