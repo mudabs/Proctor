@@ -6,6 +6,7 @@ import os
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from .. import state
 from ..extensions import db
@@ -22,7 +23,7 @@ def check_names(username):
 def resetPassword():
     user = User.query.filter_by(id=session['user_id']).one()
     if request.method == 'POST' and request.form["p1"] == request.form["p2"]:
-        user.password = request.form["p1"]
+        user.password = generate_password_hash(request.form["p1"])
         try:
             db.session.commit()
         except Exception as e:
@@ -39,10 +40,20 @@ def login():
         userType = request.form['userType']
         try:
             user = User.query.filter_by(email=email).one()
-            if user.password == password and user.userType == userType and user.email == email:
+            stored_password = user.password or ""
+            if stored_password.startswith(("scrypt:", "pbkdf2:")):
+                password_matches = check_password_hash(stored_password, password)
+            else:
+                # Migrate legacy plaintext credentials after one successful login.
+                password_matches = stored_password == password
+
+            if password_matches and user.userType == userType and user.email == email:
                 session['user_id'] = user.id
                 session['username'] = user.name
                 state.me = session['username']
+                if not stored_password.startswith(("scrypt:", "pbkdf2:")):
+                    user.password = generate_password_hash(password)
+                    db.session.commit()
                 flash('Login successful!', 'success')
                 return redirect(url_for('home'))
             else:
@@ -76,7 +87,7 @@ def register():
         userType = request.form['userType']
         imageStatus = "Registered"
         try:
-            new_user = User(name=name, email=email, password=password, userType=userType,imageStatus=imageStatus)
+            new_user = User(name=name, email=email, password=generate_password_hash(password), userType=userType,imageStatus=imageStatus)
             db.session.add(new_user)
             db.session.commit()
             session['user_id'] = new_user.id

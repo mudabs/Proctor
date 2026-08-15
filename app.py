@@ -28,6 +28,7 @@ import numpy as np
 import time as timeSound
 import matplotlib.pyplot as plt
 from collections import deque
+from werkzeug.security import generate_password_hash
 
 
 # Load the pre-trained face detector and facial landmark predictor
@@ -1038,7 +1039,7 @@ def createUsers():
         name = request.form['name']
         email = request.form['email']
         userType = request.form['userType']
-        password = "default"
+        password = generate_password_hash("default")
         imageStatus = "Unregistered"
 
         # Adding Users to DB
