@@ -1,4 +1,5 @@
 venv/
+__pycache__/
 requirements_clean.txt
 issues.md
 pull_requests.md
