@@ -93,12 +93,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/proctoring'
 ### 5. Run
 
 ```bash
-python app.py
+python run.py
 ```
 
 The app will be available at `http://localhost:5000`.
 
 ## Project Structure
+
+The runtime entrypoint is `run.py`; application features are organized under
+the `proctor/` package. `app.py` remains as a compatibility module while the
+remaining shared infrastructure is migrated.
 
 ```
 app.py                  # Application entry point — routes, models, detection logic

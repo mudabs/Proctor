@@ -10,13 +10,12 @@ from flask import flash, jsonify, redirect, render_template, request, session, u
 
 from app import (
     app,
-    black,
     configure_app_and_access_session,
     detectSound,
     drawGraph,
     drawSoundGraph,
-    unblock,
 )
+from proctor.admin.routes import black, unblock
 from proctor.extensions import db
 from proctor.models import (
     Answers, CorrectAnswers, Course, Enrollment, Exam, Lecturers, Marks,
