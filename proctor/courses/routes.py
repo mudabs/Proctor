@@ -576,21 +576,3 @@ def deleteQuestions(id,course_id):
         flash("Questions not found!")
     return redirect(url_for('addQuestions', courseId = course_id))
 # Questions---------------------------------------------------------------------------------------------------------------------------------------------
-
-
-# Lecturers---------------------------------------------------------------------------------------------------------------------------------------------
-# View Lecturers
-@courses.route('/viewLecturers')
-def viewLecturers():
-    all_data = Lecturers.query.all()
-    return render_template("manageLecturers.html", lecturers = all_data)
-
-
-# Create Lecturers
-@courses.route('/createLecturers', methods = ['POST'])
-def createLecturers():
-    if request.method == 'POST':
-        lecturer = request.form['lecturerName']
-
-        # Adding Question to DB
-        my_data = Lecturers(lecturer)
