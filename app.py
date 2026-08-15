@@ -15,6 +15,8 @@ import dlib
 import face_recognition
 import os
 from proctor.extensions import bootstrap, db
+from proctor import state
+from proctor.auth import auth
 import json
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
@@ -89,6 +91,7 @@ app.config["SECRET_KEY"] = "mysecretkey"
 
 db.init_app(app)
 bootstrap.init_app(app)
+app.register_blueprint(auth, name="")
 
 # Models Loading------------------------------------------------------------------------------------------------------------------------------
 
@@ -130,7 +133,6 @@ def load_known_faces():
       known_face_encodings.append(face_encoding)
       known_face_names.append(os.path.splitext(os.path.basename(filename))[0])
 
-me=''
 cheating_scores = deque(maxlen=None)
 
 def video_detection():
@@ -142,7 +144,6 @@ def video_detection():
     global liveness
     global numPeople
     global numFaces
-    global me
 
 
     confidence = 0.5
@@ -258,7 +259,7 @@ def video_detection():
                         displayName = known_face_names[best_match_index]
 
                     face_names.append(displayName)
-                    if identity == me:
+                    if identity == state.me:
                         pass
                     else:
                         face_names.append("Unknown")
@@ -920,21 +921,6 @@ def edit_profile():
     images = get_images_profile()
     print("images - ", images)
     return render_template('edit_profile.html',user=user, images=images)
-
-@app.route('/resetPassword',methods=['POST'])
-def resetPassword():
-    user = User.query.filter_by(id=session['user_id']).one()
-    if request.method == 'POST':
-        if(request.form["p1"] == request.form["p2"]):
-            user.password = request.form["p1"]
-            try:
-                db.session.commit()
-            except Exception as e:
-                print("Error committing changes:", e)
-                db.session.rollback()  # Revert changes if error occurs
-
-    return redirect(url_for('edit_profile'))
-
 
 @app.route('/display_images_admin')
 def display_images_admin():
@@ -1667,113 +1653,6 @@ def userResults(quizId):
 
 
 # Login------------------------------------------------------------------------------------------------------------------------------------------------
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    global me
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        userType = request.form['userType']
-        try:
-            user = User.query.filter_by(email=email).one()
-            if user.password == password and user.userType == userType and user.email == email:
-                session['user_id'] = user.id
-                session['username'] = user.name
-                me = session['username']
-                flash('Login successful!', 'success')
-                return redirect(url_for('home'))
-            else:
-                flash('Invalid credentials!', 'danger')
-                return render_template('login.html', error="Incorrect password or User Type.")
-        except NoResultFound:
-            flash('User does not exist.', 'danger')
-            return render_template('login.html', error="User does not exist.")
-    return render_template('login.html', error=None)
-# Login------------------------------------------------------------------------------------------------------------------------------------------------
-
-# Logout-----------------------------------------------------------------------------------------------------------------------------------------------
-@app.route('/logout')
-def logout():
-    session.pop('user_id', None)
-    session.pop('username', None)
-    flash('Logout successful!', 'success')
-    return redirect(url_for('login'))
-# Logout-----------------------------------------------------------------------------------------------------------------------------------------------
-
-
-#  Register---------------------------------------------------------------------------------------------------------------------------------------------
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    # global capture_enabled, name, id, image_count
-    if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        userType = request.form['userType']
-        imageStatus = "Registered"
-        try:
-            new_user = User(name=name, email=email, password=password, userType=userType,imageStatus=imageStatus)
-            db.session.add(new_user)
-            db.session.commit()
-            session['user_id'] = new_user.id
-            return redirect(url_for('home'))
-        except IntegrityError:
-            db.session.rollback()
-            return render_template('register.html', error="User already exists.")
-    return render_template('register.html', error=None)
-
-@app.route('/captureImage', methods=['GET','POST'])
-def captureImage():
-    formData = request.form
-    message = ''
-
-    if request.form["name"] :
-        # Check if the request came from the "Capture Image" button
-        if 'imageDataURL' in formData:
-            print("Hello")
-            imageData = formData['imageDataURL'].split(',')[1]
-            imageName = formData['name'] + '.jpg'
-            imagePath = os.path.join('static/images/known_images', imageName)
-
-            # Check if the file already exists
-            if check_names(request.form['name'] == False):
-                with open(os.path.join('static/images/known_images', imageName), 'wb') as f:
-                    f.write(base64.decodebytes(imageData.encode()))
-                    message = 'User image captured successfully'
-                return jsonify({'message': message})
-            else:
-                return jsonify({'message': 'User image not captured'})
-    else:
-        message = "Input value for name"
-
-    return jsonify({'message': message})
-
-@app.route('/recaptureImage', methods=['GET','POST'])
-def recaptureImage():
-    formData = request.form
-    message = ''
-    print("imageData",formData)
-    if 'imageDataURL' in formData:
-        imageData = formData['imageDataURL'].split(',')[1]
-
-        user = User.query.filter_by(id=session['user_id']).one()
-        imageName = user.name+'.jpg'
-
-        with open(os.path.join('static/images/known_images', imageName), 'wb') as f:
-            f.write(base64.decodebytes(imageData.encode()))
-            message = 'User image captured successfully'
-
-            print(user.imageStatus)
-            if (user.imageStatus == "Unregistered"):
-                user.imageStatus = "Registered"
-                db.session.commit()
-
-        return jsonify({'message': message})
-    return redirect(url_for('edit_image'))
-
-#  Register---------------------------------------------------------------------------------------------------------------------------------------------
-
 # Roles and Login---------------------------------------------------------------------------------------------------------------------------------------
 
 @app.route('/roles', methods=['GET', 'POST'])
