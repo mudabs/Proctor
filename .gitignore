@@ -1,5 +1,7 @@
 venv/
 requirements_clean.txt
+issues.md
+pull_requests.md
 
 # Large model files — download separately (see README)
 models/shape_predictor_68_face_landmarks.dat
