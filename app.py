@@ -75,8 +75,6 @@ app.register_blueprint(auth, name="auth")
 # Models Loading------------------------------------------------------------------------------------------------------------------------------
 
 from proctor.models import User, Role, Questions, Answers, CorrectAnswers, ProctorSession, Course, Enrollment, Lecturers, Exam, Quiz, QuizQuestions, Marks, QuizCompletion, UserCompletion, User_roles, Blocked, assign_role_to_user, removed_role
-with app.app_context():  # Ensure we're in the application context
-      db.create_all()
 
 # Class Loading------------------------------------------------------------------------------------------------------------------------------
 
