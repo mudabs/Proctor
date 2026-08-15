@@ -91,7 +91,7 @@ app.config["SECRET_KEY"] = "mysecretkey"
 
 db.init_app(app)
 bootstrap.init_app(app)
-app.register_blueprint(auth, name="")
+app.register_blueprint(auth, name="auth")
 
 # Models Loading------------------------------------------------------------------------------------------------------------------------------
 
