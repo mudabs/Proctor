@@ -315,6 +315,12 @@ Perform these manual checks:
 
 The work is complete only when a fresh Linux server can follow the README and `.env.example` instructions to start the application without installing the project's Python dependencies directly on the host.
 
+## Implementation notes
+
+This repository now includes the Docker/Compose CPU deployment, an explicit optional `app-gpu` service, environment-backed paths and secrets, a MariaDB health check, Gunicorn startup, `/health`, and `scripts/verify_models.py`. Browser frame uploads use authenticated, owner-scoped session IDs; the server-side webcam, server microphone, Windows hosts-file editing, and legacy process-global detection loop are not used by remote deployment. The initial frame processor provides a CPU-safe face-count baseline while model-backed signals are installed and integrated behind the same session boundary.
+
+Operationally, keep the Compose app bound to the home server's private interface and expose only the HTTPS reverse proxy through Ionos/Tailscale. Back up the MariaDB and `app_data` volumes, rotate secrets, and define biometric-data retention before accepting real exams.
+
 ## Documentation deliverables
 
 Update or add:
@@ -335,4 +341,3 @@ Before handing off:
 4. Commit only the deployment-related work to the feature branch.
 5. Report the branch name, commit hash, files changed, tests run, and any remaining limitations.
 6. Leave `main` unchanged.
-

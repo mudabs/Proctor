@@ -1,0 +1,13 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.env
+data/uploads
+data/logs
+models/*.whl
+*.pt
+*.dat
+*.yml
+*.yaml

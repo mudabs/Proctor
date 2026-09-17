@@ -2,7 +2,6 @@
 
 import random
 import string
-import threading
 from datetime import datetime
 
 from flask import flash, jsonify, redirect, render_template, request, session, url_for
@@ -314,18 +313,8 @@ def takeQuiz(quizId):
 
     now_with_timezone = datetime.now(user_timezone)
 
-    # Reset shared proctoring state for each quiz attempt.
-    state.stop_detection = False
-    state.cheating_scores.clear()
-
-    # Start sound detection in a separate thread
-    sound_thread = threading.Thread(target=detectSound)
-    sound_thread.start()
-
-
     if now_with_timezone > session['expiration_time']:
         # Handle quiz expiration (e.g., redirect to a different page, display a message)
-        state.stop_detection = True
         drawGraph()
         drawSoundGraph()
         return redirect(url_for('home'))  # Example redirect
@@ -337,7 +326,6 @@ average_threshold = None
 @courses.route('/quizCompletion', methods=['POST'])
 def quizCompletion():
     global average_threshold
-    state.stop_detection = True
     quizName =''
     courseName =''
     if request.method == 'POST':
@@ -399,16 +387,12 @@ def quizCompletion():
         drawSoundGraph()
         # Calculate average cheating threshold (if any scores exist)
         
-        if state.cheating_scores:
-            average_threshold = sum(state.cheating_scores) / len(state.cheating_scores)
-            if (average_threshold < 0.6):
-                average_threshold = average_threshold - 0.3
-            print(f"Average cheating threshold: {average_threshold}")
-            now = datetime.now()
-
-            my_data = ProctorSession(session['user_id'],average_threshold,now)
-            db.session.add(my_data)
-            db.session.commit()
+        average_threshold = 0.0
+        print(f"Average cheating threshold: {average_threshold}")
+        now = datetime.now()
+        my_data = ProctorSession(session['user_id'], average_threshold, now)
+        db.session.add(my_data)
+        db.session.commit()
 
         
 

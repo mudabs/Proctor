@@ -1,0 +1,57 @@
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-proctoring}
+      MARIADB_USER: ${MARIADB_USER:-proctor}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Set MARIADB_PASSWORD in .env}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p$${MARIADB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      PROCTOR_DATABASE_URI: ${PROCTOR_DATABASE_URI:-mysql+pymysql://proctor:${MARIADB_PASSWORD}@db:3306/proctoring}
+      PROCTOR_MODEL_DIR: /app/models
+      PROCTOR_DATA_DIR: /app/data
+    ports:
+      - "${PROCTOR_BIND_ADDRESS:-127.0.0.1}:${PROCTOR_PORT:-8000}:8000"
+    volumes:
+      - ./models:/app/models:ro
+      - app_data:/app/data
+
+  app-gpu:
+    profiles: ["gpu"]
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      PROCTOR_DATABASE_URI: ${PROCTOR_DATABASE_URI:-mysql+pymysql://proctor:${MARIADB_PASSWORD}@db:3306/proctoring}
+      PROCTOR_MODEL_DIR: /app/models
+      PROCTOR_DATA_DIR: /app/data
+      PROCTOR_INFERENCE_DEVICE: cuda
+    ports:
+      - "${PROCTOR_BIND_ADDRESS:-127.0.0.1}:${PROCTOR_PORT:-8000}:8000"
+    volumes:
+      - ./models:/app/models:ro
+      - app_data:/app/data
+    gpus: all
+
+volumes:
+  db_data:
+  app_data:
