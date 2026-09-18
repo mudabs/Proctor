@@ -1,8 +1,6 @@
 {% extends 'loginbase.html' %}
 {% block title %}Register{% endblock %}
 {% block content %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
-
 <main>
     <section class="d-flex align-items-center my-5 mt-lg-6 mb-lg-5">
         <div class="container">
@@ -59,7 +57,8 @@
                                 </select>
                             </div>
 
-                            <div class="mx-auto" id="my_camera" style="width: 100%;"></div>
+                            <video id="camera" autoplay muted playsinline width="350" height="260"
+                                style="max-width: 100%; background: #111;"></video>
                             <br>
                             <div class="d-flex justify-content-center"" id="results" style="width: 100%;"></div>
                             <br>
@@ -85,36 +84,48 @@
 </main>
 
 <script>
-    Webcam.set({
-        width: 350,
-        height: 260,
-        image_format: 'jpeg',
-        jpeg_quality: 100
-    });
-    Webcam.attach('#my_camera');
+    const camera = document.getElementById('camera');
+    const captureButton = document.getElementById('capture');
+    let cameraStream = null;
 
-    document.getElementById('capture').addEventListener('click', function (event) {
-        event.preventDefault(); // Prevent form submission
-        take_snapshot();
-    });
-
-    function take_snapshot() {
-        Webcam.snap(function (data_uri) {
-            previewImage(data_uri);
-            sendImageToServer(data_uri);
-        });
+    async function startCamera() {
+        if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+            throw new Error('Camera access requires HTTPS on a remote server.');
+        }
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        camera.srcObject = cameraStream;
+        await camera.play();
+        captureButton.disabled = false;
     }
+
+    captureButton.disabled = true;
+    startCamera().catch(error => {
+        document.getElementById('results').textContent = `Camera setup failed: ${error.message}`;
+    });
+
+    captureButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        if (!cameraStream || !camera.videoWidth) {
+            document.getElementById('results').textContent = 'Camera is not ready yet.';
+            return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = camera.videoWidth;
+        canvas.height = camera.videoHeight;
+        canvas.getContext('2d').drawImage(camera, 0, 0, canvas.width, canvas.height);
+        const dataUri = canvas.toDataURL('image/jpeg', 0.9);
+        previewImage(dataUri);
+        sendImageToServer(dataUri);
+    });
 
     function previewImage(data_uri) {
         document.getElementById('results').innerHTML = '<img src="' + data_uri + '"/>';
     }
 
     function sendImageToServer(data_uri) {
-        var name = document.getElementById('name').value;
-        name = name + '.jpg'
+        const name = document.getElementById('name').value;
         const formData = new FormData(document.getElementById('myForm'));
         formData.append('imageDataURL', data_uri);
-        formData.append('imageName', name);
 
         fetch('/captureImage', {
             method: 'POST',
@@ -122,24 +133,17 @@
         })
             .then(response => response.json())
             .then(result => {
-                console.log(result); // Check server response for success/errors
-                alert(result.message)
+                if (!result.ok) throw new Error(result.message || 'Image capture failed');
+                alert(result.message);
             })
             .catch(error => {
                 console.error('Error sending data:', error);
             });
     }
 
-    function captureImage() {
-        const name = document.getElementById('name').value;
-        const dataURI = Webcam.snap();
-        document.getElementById('results').innerHTML =
-            '<img src="' + dataURI + '"/>';
-        document.getElementById('captureForm').append(
-            '<input type="hidden" name="imageDataURL" value="' + dataURI + '">'
-        );
-        document.getElementById('captureForm').submit();
-    }
+    window.addEventListener('beforeunload', () => {
+        if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+    });
 </script>
 
 {% endblock %}
