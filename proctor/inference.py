@@ -42,6 +42,9 @@ MODEL_FILES = {
     "shape_predictor_68_face_landmarks.dat": "dlib facial landmarks",
     "yolov8n.pt": "YOLO object detection",
     "best_20.pt": "custom liveness detection",
+}
+
+OPTIONAL_MODEL_FILES = {
     "TrainingImageLabel/Trainner.yml": "LBPH face recognition",
 }
 

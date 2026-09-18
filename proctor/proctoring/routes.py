@@ -50,7 +50,14 @@ def upload_frame(session_id):
     if state.last_frame_at and (now - state.last_frame_at).total_seconds() < interval:
         return jsonify({"error": "frame rate exceeded"}), 429
     try:
-        result = detection.process_frame(frame, current_app.config, session.get("username"))
+        audio_header = request.headers.get("X-Proctor-Audio-Level")
+        try:
+            audio_level = float(audio_header) if audio_header is not None else None
+        except ValueError:
+            audio_level = None
+        result = detection.process_frame(
+            frame, current_app.config, session.get("username"), audio_level=audio_level
+        )
     except ValueError as exc:
         state.errors.append(str(exc))
         return jsonify({"error": str(exc)}), 400

@@ -15,6 +15,16 @@
   try {
     const media = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
     document.getElementById('camera').srcObject = media;
+    let analyser = null;
+    let audioSamples = null;
+    try {
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(media);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      audioSamples = new Uint8Array(analyser.fftSize);
+      source.connect(analyser);
+    } catch (_) {}
     const started = await fetch('/proctoring/session', {method: 'POST'});
     if (!started.ok) throw new Error('Could not start the proctoring session');
     const {session_id: id} = await started.json();
@@ -33,7 +43,14 @@
       canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(async blob => {
         try {
-          const response = await fetch(`/proctoring/session/${id}/frame`, {method: 'POST', headers: {'Content-Type': 'image/jpeg'}, body: blob});
+          const headers = {'Content-Type': 'image/jpeg'};
+          if (analyser && audioSamples) {
+            analyser.getByteTimeDomainData(audioSamples);
+            let sum = 0;
+            for (const sample of audioSamples) sum += ((sample - 128) / 128) ** 2;
+            headers['X-Proctor-Audio-Level'] = String(Math.sqrt(sum / audioSamples.length));
+          }
+          const response = await fetch(`/proctoring/session/${id}/frame`, {method: 'POST', headers, body: blob});
           if (response.ok) result.textContent = JSON.stringify(await response.json(), null, 2);
           else if (response.status !== 429) status.textContent = `Frame upload failed (${response.status})`;
         } finally {
