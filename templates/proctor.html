@@ -7,7 +7,10 @@
 {% else %}
 <video id="camera" autoplay muted playsinline width="640"></video>
 <p id="status">Requesting camera and microphone permission…</p>
-<pre id="result"></pre>
+<pre id="result" style="color: #fff;"></pre>
+<style>
+  #status { color: #fff; }
+</style>
 <script>
 (async () => {
   const status = document.getElementById('status');
