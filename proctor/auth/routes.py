@@ -3,7 +3,8 @@
 import base64
 import os
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, session, url_for
+from werkzeug.utils import secure_filename
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -99,29 +100,21 @@ def register():
 
 @auth.route('/captureImage', methods=['GET','POST'])
 def captureImage():
-    formData = request.form
-    message = ''
-
-    if request.form["name"] :
-        # Check if the request came from the "Capture Image" button
-        if 'imageDataURL' in formData:
-            print("Hello")
-            imageData = formData['imageDataURL'].split(',')[1]
-            imageName = formData['name'] + '.jpg'
-            imagePath = os.path.join('static/images/known_images', imageName)
-
-            # Check if the file already exists
-            if check_names(request.form['name'] == False):
-                with open(os.path.join('static/images/known_images', imageName), 'wb') as f:
-                    f.write(base64.decodebytes(imageData.encode()))
-                    message = 'User image captured successfully'
-                return jsonify({'message': message})
-            else:
-                return jsonify({'message': 'User image not captured'})
-    else:
-        message = "Input value for name"
-
-    return jsonify({'message': message})
+    name = secure_filename(request.form.get('name', '').strip())
+    data_url = request.form.get('imageDataURL', '')
+    if not name or ',' not in data_url:
+        return jsonify({'message': 'A name and captured image are required'}), 400
+    try:
+        image_data = base64.b64decode(data_url.split(',', 1)[1], validate=True)
+    except (ValueError, TypeError):
+        return jsonify({'message': 'The captured image is invalid'}), 400
+    if len(image_data) > current_app.config['MAX_CONTENT_LENGTH']:
+        return jsonify({'message': 'The captured image is too large'}), 413
+    image_dir = current_app.config['PROCTOR_DATA_DIR'] / 'known_images'
+    image_dir.mkdir(parents=True, exist_ok=True)
+    image_path = image_dir / f'{name}.jpg'
+    image_path.write_bytes(image_data)
+    return jsonify({'message': 'User image captured successfully'})
 
 @auth.route('/recaptureImage', methods=['GET','POST'])
 def recaptureImage():

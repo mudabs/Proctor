@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import string
-from flask import Flask, flash, render_template, session, request, jsonify
+from flask import Flask, flash, render_template, session, request, jsonify, send_from_directory
 import numpy as np
 import os
 from proctor.extensions import bootstrap, db
@@ -365,6 +365,11 @@ app.register_blueprint(proctoring, name="proctoring")
 @app.get('/favicon.ico')
 def favicon():
     return '', 204
+
+
+@app.get('/media/known_images/<path:filename>')
+def known_image(filename):
+    return send_from_directory(app.config['PROCTOR_DATA_DIR'] / 'known_images', filename)
 
 
 @app.get('/health')

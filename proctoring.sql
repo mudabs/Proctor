@@ -404,7 +404,7 @@ CREATE TABLE `user` (
   `id` int(11) NOT NULL,
   `name` varchar(100) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
-  `password` varchar(100) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
   `userType` varchar(20) NOT NULL,
   `imageStatus` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
