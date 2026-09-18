@@ -48,6 +48,15 @@ The exam page requests camera and microphone access from the student's browser, 
 
 Install and authenticate Tailscale on both servers and restrict the tailnet with ACLs. Configure the Ionos reverse proxy to forward the public HTTPS hostname to the home server's Tailscale address and port 8000. Keep the Compose bind address private, point DNS to Ionos, terminate TLS at Ionos or Caddy/Nginx, and use an HTTPS public URL so browsers allow camera and microphone access. This first implementation uses HTTP frame uploads, not WebSockets.
 
+## CI/CD deployment
+
+The `Deploy Proctor` workflow deploys pushes to `main` through the IONOS gateway
+to `/opt/apps/proctor` on `vps01`. It preserves the remote `.env`, model files,
+and Docker volumes, then rebuilds the app, verifies the model assets, and checks
+`/health` before reporting success. Configure the repository secrets
+`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, and
+`VPS01_KNOWN_HOSTS`, plus the optional repository variable `PROCTOR_APP_DIR`.
+
 ## Troubleshooting
 
 - If `/health` is degraded, wait for MariaDB and ensure the URI uses host `db`, not `localhost`.

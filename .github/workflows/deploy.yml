@@ -1,0 +1,79 @@
+name: Deploy Proctor
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proctor-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to vps01 through IONOS
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/proctor_deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/proctor_deploy" "$HOME/.ssh/known_hosts"
+          eval "$(ssh-agent -s)"
+          ssh-add "$HOME/.ssh/proctor_deploy"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+
+      - name: Pull, rebuild, and verify the production app
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          VPS01_KNOWN_HOSTS: ${{ secrets.VPS01_KNOWN_HOSTS }}
+          APP_DIR: ${{ vars.PROCTOR_APP_DIR }}
+        run: |
+          ssh -A \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "VPS01_KNOWN_HOSTS='$VPS01_KNOWN_HOSTS' APP_DIR='${APP_DIR:-/opt/apps/proctor}' bash -s" <<'IONOS'
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS01_KNOWN_HOSTS" > "$HOME/.ssh/proctor_vps01_known_hosts"
+          chmod 600 "$HOME/.ssh/proctor_vps01_known_hosts"
+          ssh -A -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/proctor_vps01_known_hosts" \
+            munashe@vps01 "APP_DIR='$APP_DIR' bash -s" <<'VPS01'
+          set -euo pipefail
+          cd "$APP_DIR"
+          git fetch --prune origin main
+          if git show-ref --verify --quiet refs/heads/main; then
+            git checkout main
+          else
+            git checkout -B main origin/main
+          fi
+          git reset --hard origin/main
+          docker compose up -d --build app
+          docker compose run --rm app python scripts/verify_models.py
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:8000/health >/tmp/proctor-health.json; then
+              cat /tmp/proctor-health.json
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs --tail=100 app
+          exit 1
+          VPS01
+          IONOS
