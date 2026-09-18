@@ -12,7 +12,8 @@
                     <div class="text-center text-md-center mb-4 mt-md-0">
                         <h1 class="mb-0 h3">Create an Account</h1>
                     </div>
-                    <img src="{{ url_for('static', filename='personal_information.png') }}">
+                    <img src="{{ url_for('static', filename='images/logo/logo.png') }}" alt="Proctor">
+                    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
                     <div class="card-body ">
                         <form action="register" id="myForm" method="POST" class="mt-4">
 
@@ -23,7 +24,7 @@
                                         <span class="input-group-text"><span class="fas fa-user"></span></span>
                                     </div>
                                     <input name="name" class="form-control" id="name" 
-                                        type="text" required>
+                                        type="text" value="{{ form.get('name', '') if form else '' }}" required>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -33,7 +34,7 @@
                                         <span class="input-group-text"><span class="fas fa-envelope"></span></span>
                                     </div>
                                     <input name="email" type="email" class="form-control" id="email"
-                                        aria-label="email address" required>
+                                        aria-label="email address" value="{{ form.get('email', '') if form else '' }}" required>
                                 </div>
                             </div>
 

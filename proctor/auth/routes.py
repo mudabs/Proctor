@@ -82,11 +82,17 @@ def logout():
 def register():
     # global capture_enabled, name, id, image_count
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        userType = request.form['userType']
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        userType = request.form.get('userType', 'student')
         imageStatus = "Registered"
+        if not name or not email or not password:
+            return render_template('register.html', error="Name, email, and password are required.", form=request.form)
+        existing = User.query.filter((User.name == name) | (User.email == email)).first()
+        if existing:
+            field = "email" if existing.email == email else "name"
+            return render_template('register.html', error=f"That {field} is already registered. Please use another.", form=request.form)
         try:
             new_user = User(name=name, email=email, password=generate_password_hash(password), userType=userType,imageStatus=imageStatus)
             db.session.add(new_user)
@@ -95,7 +101,7 @@ def register():
             return redirect(url_for('home'))
         except IntegrityError:
             db.session.rollback()
-            return render_template('register.html', error="User already exists.")
+            return render_template('register.html', error="That name or email is already registered.", form=request.form)
     return render_template('register.html', error=None)
 
 @auth.route('/captureImage', methods=['GET','POST'])
