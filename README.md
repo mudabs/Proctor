@@ -38,7 +38,7 @@ Use CPU if the older GPU cannot run the pinned CUDA/PyTorch stack.
 
 ## Development and operations
 
-For local development, use Python 3.11 and a virtual environment, install `requirements.txt`, configure `PROCTOR_DATABASE_URI` and `PROCTOR_SECRET_KEY`, then run `python run.py`. Production uses Gunicorn through Compose and never enables Flask debug mode.
+For local development, use Python 3.11 and a virtual environment, install `requirements.txt`, configure `PROCTOR_DATABASE_URI` and `PROCTOR_SECRET_KEY`, then run `python run.py`. The optional legacy face-encoding dependencies are in `requirements-vision.txt`. Production uses Gunicorn through Compose and never enables Flask debug mode.
 
 The `app_data` volume stores runtime uploads and logs. Back up it and the database volume. Rotate `PROCTOR_SECRET_KEY`, restrict storage permissions, and define a retention period for biometric data.
 
