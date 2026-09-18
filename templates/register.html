@@ -1,8 +1,6 @@
 {% extends 'loginbase.html' %}
 {% block title %}Register{% endblock %}
 {% block content %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.26/webcam.min.js"></script>
-
 <main>
     <section class="d-flex align-items-center my-5 mt-lg-6 mb-lg-5">
         <div class="container">
@@ -12,7 +10,8 @@
                     <div class="text-center text-md-center mb-4 mt-md-0">
                         <h1 class="mb-0 h3">Create an Account</h1>
                     </div>
-                    <img src="{{ url_for('static', filename='personal_information.png') }}">
+                    <img src="{{ url_for('static', filename='images/logo/logo.png') }}" alt="Proctor">
+                    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
                     <div class="card-body ">
                         <form action="register" id="myForm" method="POST" class="mt-4">
 
@@ -23,7 +22,7 @@
                                         <span class="input-group-text"><span class="fas fa-user"></span></span>
                                     </div>
                                     <input name="name" class="form-control" id="name" 
-                                        type="text" required>
+                                        type="text" value="{{ form.get('name', '') if form else '' }}" required>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -33,7 +32,7 @@
                                         <span class="input-group-text"><span class="fas fa-envelope"></span></span>
                                     </div>
                                     <input name="email" type="email" class="form-control" id="email"
-                                        aria-label="email address" required>
+                                        aria-label="email address" value="{{ form.get('email', '') if form else '' }}" required>
                                 </div>
                             </div>
 
@@ -58,7 +57,9 @@
                                 </select>
                             </div>
 
-                            <div class="mx-auto" id="my_camera" style="width: 100%;"></div>
+                            <video id="camera" autoplay muted playsinline width="350" height="260"
+                                style="max-width: 100%; background: #111;"></video>
+                            <div id="cameraStatus" class="text-muted">Starting camera…</div>
                             <br>
                             <div class="d-flex justify-content-center"" id="results" style="width: 100%;"></div>
                             <br>
@@ -84,61 +85,73 @@
 </main>
 
 <script>
-    Webcam.set({
-        width: 350,
-        height: 260,
-        image_format: 'jpeg',
-        jpeg_quality: 100
-    });
-    Webcam.attach('#my_camera');
+    const camera = document.getElementById('camera');
+    const captureButton = document.getElementById('capture');
+    let cameraStream = null;
 
-    document.getElementById('capture').addEventListener('click', function (event) {
-        event.preventDefault(); // Prevent form submission
-        take_snapshot();
-    });
-
-    function take_snapshot() {
-        Webcam.snap(function (data_uri) {
-            previewImage(data_uri);
-            sendImageToServer(data_uri);
-        });
+    async function startCamera() {
+        if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+            throw new Error('Camera access requires HTTPS on a remote server.');
+        }
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        camera.srcObject = cameraStream;
+        camera.onloadedmetadata = () => {
+            camera.play().catch(() => {});
+            captureButton.disabled = false;
+            document.getElementById('cameraStatus').textContent = 'Camera ready.';
+        };
     }
+
+    captureButton.disabled = true;
+    startCamera().catch(error => {
+        const message = `Camera setup failed: ${error.message}`;
+        document.getElementById('cameraStatus').textContent = message;
+        document.getElementById('results').textContent = message;
+    });
+
+    captureButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        if (!cameraStream || !camera.videoWidth) {
+            document.getElementById('results').textContent = 'Camera is not ready yet.';
+            return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = camera.videoWidth;
+        canvas.height = camera.videoHeight;
+        canvas.getContext('2d').drawImage(camera, 0, 0, canvas.width, canvas.height);
+        const dataUri = canvas.toDataURL('image/jpeg', 0.9);
+        previewImage(dataUri);
+        sendImageToServer(dataUri);
+    });
 
     function previewImage(data_uri) {
         document.getElementById('results').innerHTML = '<img src="' + data_uri + '"/>';
     }
 
     function sendImageToServer(data_uri) {
-        var name = document.getElementById('name').value;
-        name = name + '.jpg'
         const formData = new FormData(document.getElementById('myForm'));
         formData.append('imageDataURL', data_uri);
-        formData.append('imageName', name);
 
         fetch('/captureImage', {
             method: 'POST',
             body: formData
         })
-            .then(response => response.json())
+            .then(async response => {
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Image capture failed');
+                return result;
+            })
             .then(result => {
-                console.log(result); // Check server response for success/errors
-                alert(result.message)
+                alert(result.message);
             })
             .catch(error => {
                 console.error('Error sending data:', error);
             });
     }
 
-    function captureImage() {
-        const name = document.getElementById('name').value;
-        const dataURI = Webcam.snap();
-        document.getElementById('results').innerHTML =
-            '<img src="' + dataURI + '"/>';
-        document.getElementById('captureForm').append(
-            '<input type="hidden" name="imageDataURL" value="' + dataURI + '">'
-        );
-        document.getElementById('captureForm').submit();
-    }
+    window.addEventListener('beforeunload', () => {
+        if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+    });
 </script>
 
 {% endblock %}

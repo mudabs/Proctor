@@ -1,0 +1,5 @@
+# Optional legacy face-encoding pipeline. The deployable browser-frame
+# baseline does not import it; dlib-bin provides the Linux wheel.
+-r requirements.txt
+face-recognition==1.3.0
+face_recognition_models==0.3.0

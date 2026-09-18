@@ -1,198 +1,75 @@
 {% extends "proctorbase.html" %}
-
-<!DOCTYPE html>
-<html>
-
-<head>
-    <title>{% block title %}Proctoring{%endblock%}</title>
-
-    <!-- Load Files -->
-
-
-
-    {% block cssimports %}
-
-    {% endblock %}
-
-    <!-- Load Files -->
-
-
-
-</head>
-
-<body>
-    {% block top_navigation %}
-    <h1>Proctoring
-
-    </h1>
-    {% endblock %}
-
-    {% block proctor %}
-    <div>
-        <img id="video-feed" src="{{ url_for('video') }}" alt="Video Feed" style="width: 250px;">
-    </div>
-
-    <ul>
-        <li>Cheating: {{ data['cheat'] }}</li>
-        <li>Lips Movement: {{ data['lips'] }}</li>
-        <li>Direction: {{ data['direction'] }}</li>
-        <li>Cellphone Usage: {{ data['cellphone'] }}</li>
-        <li>Identity: {{ data['identity'] }}</li>
-        <li>Liveness: {{ data['liveness'] }}</li>
-        <li>live: {{li}}</li>
-    </ul>
-
-    {% endblock %}
-
-
-    {% block content %}
-    <div>
-        <img id="video-feed" src="{{ url_for('video') }}" alt="Video Feed">
-    </div> 
-
-    <!-- Graph -->
-    <div class="container-fluid">
-        <!-- Example row of columns -->
-        <div class="row">
-            <div class="container-fluid" id="data-container"></div>
-            <div class="container-fluid" id="data-container2"></div>
-        </div>
-    </div>
-
-    <!-- <div class="ct-chart ct-perfect-fourth"></div> -->
-
-    {% endblock %}
-
-    {% block jsimports %}
-
-
-
-    <!-- JQuery links  -->
-    <script src="../static/js/jquery.min.js"></script>
-
-    <!--High CHART LIVE  -->
-    <script src="../static/js/highcharts.js"></script>
-    
-
-
-    
-    
-    <script>
-        var chart1, chart2;
-    
-        function requestData1() {
-            // Ajax call to get the Data from Flask
-            var requests = $.get('/humidity');
-    
-            // request is complete
-            var tm = requests.done(function(result) {
-    
-                console.log("TEMPERATURE", result.temperature);
-                var series = chart1.series[0],
-                    shift = series.data.length > 20;
-    
-                // add the point
-                chart1.series[0].addPoint(result, true, shift);
-    
-                // call it again after one second
-                setTimeout(requestData1, 2000);
-    
-            });
+{% block title %}Proctoring{% endblock %}
+{% block proctor %}
+<h1>Proctoring</h1>
+{% if not session.get('user_id') and not session.get('username') %}
+<p>Please sign in before starting a proctoring session.</p>
+{% else %}
+<video id="camera" autoplay muted playsinline width="640"></video>
+<p id="status">Requesting camera and microphone permission…</p>
+<pre id="result" style="color: #fff;"></pre>
+<style>
+  #status { color: #fff; }
+</style>
+<script>
+(async () => {
+  const status = document.getElementById('status');
+  const result = document.getElementById('result');
+  try {
+    const media = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+    document.getElementById('camera').srcObject = media;
+    let analyser = null;
+    let audioSamples = null;
+    try {
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(media);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      audioSamples = new Uint8Array(analyser.fftSize);
+      source.connect(analyser);
+    } catch (_) {}
+    const started = await fetch('/proctoring/session', {method: 'POST'});
+    if (!started.ok) throw new Error('Could not start the proctoring session');
+    const {session_id: id} = await started.json();
+    const canvas = document.createElement('canvas');
+    const video = document.getElementById('camera');
+    let sending = false;
+    const send = () => {
+      if (sending || !video.videoWidth) {
+        if (!sending) setTimeout(send, {{ config.get('PROCTOR_FRAME_INTERVAL_MS', 1000) }});
+        return;
+      }
+      sending = true;
+      const scale = Math.min(1, 1280 / video.videoWidth, 720 / video.videoHeight);
+      canvas.width = Math.round(video.videoWidth * scale);
+      canvas.height = Math.round(video.videoHeight * scale);
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(async blob => {
+        try {
+          const headers = {'Content-Type': 'image/jpeg'};
+          if (analyser && audioSamples) {
+            analyser.getByteTimeDomainData(audioSamples);
+            let sum = 0;
+            for (const sample of audioSamples) sum += ((sample - 128) / 128) ** 2;
+            headers['X-Proctor-Audio-Level'] = String(Math.sqrt(sum / audioSamples.length));
+          }
+          const response = await fetch(`/proctoring/session/${id}/frame`, {method: 'POST', headers, body: blob});
+          if (response.ok) result.textContent = JSON.stringify(await response.json(), null, 2);
+          else if (response.status !== 429) status.textContent = `Frame upload failed (${response.status})`;
+        } finally {
+          sending = false;
+          setTimeout(send, {{ config.get('PROCTOR_FRAME_INTERVAL_MS', 1000) }});
         }
-    
-        function requestData2() {
-            // Ajax call to get the Data from Flask
-            var requests = $.get('/humidity');
-    
-            // request is complete
-            var tm = requests.done(function(result) {
-    
-                console.log("TEMPERATURE", result.temperature);
-                var series = chart2.series[0],
-                    shift = series.data.length > 20;
-    
-                // add the point
-                chart2.series[0].addPoint(result, true, shift);
-    
-                // call it again after one second
-                setTimeout(requestData2, 2000);
-    
-            });
-        }
-    
-
-        $(document).ready(function() {
-            chart1 = new Highcharts.Chart({
-                chart: {
-                    renderTo: 'data-container',
-                    defaultSeriesType: 'spline',
-                    events: {
-                        load: requestData1
-                    }
-                },
-                title: {
-                    text: 'Head Pose Estimation'
-                },
-                // Tweak this value for graph optimization
-                xAxis: {
-                    type: 'datetime',
-                    tickPixelInterval: 150,
-                    maxZoom: 20 * 1000
-                },
-                yAxis: {
-                    minPadding: 0.2,
-                    maxPadding: 0.2,
-                    title: {
-                        text: 'Value',
-                        margin: 80
-                    }
-                },
-                series: [{
-                    name: 'Current Time',
-                    data: []
-                }]
-            });
-    
-            chart2 = new Highcharts.Chart({
-                chart: {
-                    renderTo: 'data-container2',
-                    defaultSeriesType: 'spline',
-                    events: {
-                        load: requestData2
-                    }
-                },
-                title: {
-                    text: 'Head Pose Estimation (Duplicate)'
-                },
-                // Tweak this value for graph optimization
-                xAxis: {
-                    type: 'datetime',
-                    tickPixelInterval: 150,
-                    maxZoom: 20 * 1000
-                },
-                yAxis: {
-                    minPadding: 0.2,
-                    maxPadding: 0.2,
-                    title: {
-                        text: 'Value',
-                        margin: 80
-                    }
-                },
-                series: [{
-                    name: 'Current Time',
-                    data: []
-                }]
-            });
-
-        });
-    
-    </script>
-    
-
-
-
-    {% endblock %}
-
-</body>
-
-</html>
+      }, 'image/jpeg', 0.75);
+    };
+    status.textContent = 'Camera active; frames are sent securely to this exam session.';
+    send();
+    window.addEventListener('beforeunload', () => fetch(`/proctoring/session/${id}`, {method: 'DELETE', keepalive: true}));
+  } catch (error) {
+    status.textContent = `Camera setup failed: ${error.message}`;
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}
+{% block content %}{% endblock %}

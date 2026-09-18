@@ -12,31 +12,17 @@ from proctor.models import (
 )
 from . import admin
 
-hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
 name = ""
 image_count = 0
 capture_enabled = False
 
 
 def block_websites():
-    blocked_websites = [blocked.url for blocked in Blocked.query.all()]
-    now = datetime.now()
-    with open(hosts_path, "a") as hosts_file:
-        hosts_file.write("\n\n")
-        for website in blocked_websites:
-            hosts_file.write("127.0.0.1 {}\n".format(website))
-            hosts_file.write("127.0.0.1 www.{}\n".format(website))
-    print("Websites blocked successfully at", now)
+    return False
 
 
 def unblock_websites():
-    with open(hosts_path, "r") as hosts_file:
-        lines = hosts_file.readlines()
-    with open(hosts_path, "w") as hosts_file:
-        for line in lines:
-            if not any(website in line for website in [blocked.url for blocked in Blocked.query.all()]):
-                hosts_file.write(line)
-    print("Websites unblocked successfully")
+    return False
 
 
 @admin.route('/viewLecturers')

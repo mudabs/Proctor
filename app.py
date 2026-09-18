@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import string
-from flask import Flask, flash, render_template, session, request
+from flask import Flask, flash, render_template, session, request, jsonify, send_from_directory
 import numpy as np
 import os
 from proctor.extensions import bootstrap, db
@@ -9,10 +9,10 @@ from proctor.auth import auth
 from proctor.config import Config
 from proctor.admin import admin
 import json
-import sounddevice as sd
 import numpy as np
 import time as timeSound
 import matplotlib.pyplot as plt
+from sqlalchemy import text
 from werkzeug.security import generate_password_hash
 
 
@@ -67,6 +67,15 @@ app = Flask(__name__)
 
 app.config.from_object(Config)
 
+for _directory in (
+    app.config["PROCTOR_MODEL_DIR"],
+    app.config["PROCTOR_DATA_DIR"],
+    app.config["PROCTOR_DATA_DIR"] / "known_images",
+    app.config["PROCTOR_DATA_DIR"] / "logs",
+    app.config["PROCTOR_DATA_DIR"] / "uploads",
+):
+    _directory.mkdir(parents=True, exist_ok=True)
+
 db.init_app(app)
 bootstrap.init_app(app)
 app.register_blueprint(auth, name="auth")
@@ -87,7 +96,6 @@ def check_sound(indata, frames, callback_time, status):
     global noise
     volume_norm = np.linalg.norm(indata) * 2
     noise = volume_norm/2
-    state.noise = noise
     if volume_norm > soundThreshold:
         print(volume_norm)
         with open('sound.txt', 'a') as file:
@@ -120,10 +128,8 @@ def drawSoundGraph():
     clearTextFile("./sound.txt")
   
 def detectSound():
-    # Start sound capture
-    with sd.InputStream(callback=check_sound):
-        while not state.stop_detection:
-            timeSound.sleep(1)
+    """Legacy compatibility hook; remote audio is browser-owned."""
+    return None
           
 
 # /////////////////////Sound Detection
@@ -356,6 +362,28 @@ app.register_blueprint(admin, name="admin")
 app.register_blueprint(proctoring, name="proctoring")
 
 
+@app.get('/favicon.ico')
+def favicon():
+    return '', 204
+
+
+@app.get('/media/known_images/<path:filename>')
+def known_image(filename):
+    return send_from_directory(app.config['PROCTOR_DATA_DIR'] / 'known_images', filename)
+
+
+@app.get('/health')
+def health():
+    """Readiness probe without exposing database credentials or personal data."""
+    database = "ok"
+    try:
+        db.session.execute(text("SELECT 1"))
+    except Exception:
+        database = "unavailable"
+    status = 200 if database == "ok" else 503
+    return jsonify({"status": "ok" if status == 200 else "degraded", "database": database}), status
+
+
 def _add_legacy_endpoint_aliases():
     """Keep existing bare endpoint names working during the package migration."""
     for rule in list(app.url_map.iter_rules()):
@@ -379,4 +407,4 @@ _add_legacy_endpoint_aliases()
 if __name__ == '__main__':
     with app.app_context():  # Create the application context
         db.create_all()  # Now it can access the application context
-    app.run(debug=True)
+    app.run(debug=False)
