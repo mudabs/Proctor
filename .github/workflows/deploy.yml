@@ -57,6 +57,7 @@ jobs:
           set -euo pipefail
           cd "$APP_DIR"
           git fetch --prune origin main
+          git clean -fd
           if git show-ref --verify --quiet refs/heads/main; then
             git checkout main
           else
