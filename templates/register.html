@@ -59,6 +59,7 @@
 
                             <video id="camera" autoplay muted playsinline width="350" height="260"
                                 style="max-width: 100%; background: #111;"></video>
+                            <div id="cameraStatus" class="text-muted">Starting camera…</div>
                             <br>
                             <div class="d-flex justify-content-center"" id="results" style="width: 100%;"></div>
                             <br>
@@ -94,13 +95,18 @@
         }
         cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         camera.srcObject = cameraStream;
-        await camera.play();
-        captureButton.disabled = false;
+        camera.onloadedmetadata = () => {
+            camera.play().catch(() => {});
+            captureButton.disabled = false;
+            document.getElementById('cameraStatus').textContent = 'Camera ready.';
+        };
     }
 
     captureButton.disabled = true;
     startCamera().catch(error => {
-        document.getElementById('results').textContent = `Camera setup failed: ${error.message}`;
+        const message = `Camera setup failed: ${error.message}`;
+        document.getElementById('cameraStatus').textContent = message;
+        document.getElementById('results').textContent = message;
     });
 
     captureButton.addEventListener('click', function (event) {
