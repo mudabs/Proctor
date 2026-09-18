@@ -20,19 +20,30 @@
     const {session_id: id} = await started.json();
     const canvas = document.createElement('canvas');
     const video = document.getElementById('camera');
+    let sending = false;
     const send = () => {
-      if (!video.videoWidth) return;
+      if (sending || !video.videoWidth) {
+        if (!sending) setTimeout(send, {{ config.get('PROCTOR_FRAME_INTERVAL_MS', 1000) }});
+        return;
+      }
+      sending = true;
       const scale = Math.min(1, 1280 / video.videoWidth, 720 / video.videoHeight);
       canvas.width = Math.round(video.videoWidth * scale);
       canvas.height = Math.round(video.videoHeight * scale);
       canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(async blob => {
-        const response = await fetch(`/proctoring/session/${id}/frame`, {method: 'POST', headers: {'Content-Type': 'image/jpeg'}, body: blob});
-        if (response.ok) result.textContent = JSON.stringify(await response.json(), null, 2);
+        try {
+          const response = await fetch(`/proctoring/session/${id}/frame`, {method: 'POST', headers: {'Content-Type': 'image/jpeg'}, body: blob});
+          if (response.ok) result.textContent = JSON.stringify(await response.json(), null, 2);
+          else if (response.status !== 429) status.textContent = `Frame upload failed (${response.status})`;
+        } finally {
+          sending = false;
+          setTimeout(send, {{ config.get('PROCTOR_FRAME_INTERVAL_MS', 1000) }});
+        }
       }, 'image/jpeg', 0.75);
     };
     status.textContent = 'Camera active; frames are sent securely to this exam session.';
-    setInterval(send, {{ config.get('PROCTOR_FRAME_INTERVAL_MS', 1000) }});
+    send();
     window.addEventListener('beforeunload', () => fetch(`/proctoring/session/${id}`, {method: 'DELETE', keepalive: true}));
   } catch (error) {
     status.textContent = `Camera setup failed: ${error.message}`;
