@@ -2,6 +2,9 @@
 {% block title %}Proctoring{% endblock %}
 {% block proctor %}
 <h1>Proctoring</h1>
+{% if not session.get('user_id') and not session.get('username') %}
+<p>Please sign in before starting a proctoring session.</p>
+{% else %}
 <video id="camera" autoplay muted playsinline width="640"></video>
 <p id="status">Requesting camera and microphone permission…</p>
 <pre id="result"></pre>
@@ -33,9 +36,9 @@
     window.addEventListener('beforeunload', () => fetch(`/proctoring/session/${id}`, {method: 'DELETE', keepalive: true}));
   } catch (error) {
     status.textContent = `Camera setup failed: ${error.message}`;
-    await fetch('/proctoring/session/invalid/error', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({error: error.message})}).catch(() => {});
   }
 })();
 </script>
+{% endif %}
 {% endblock %}
 {% block content %}{% endblock %}

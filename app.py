@@ -362,6 +362,11 @@ app.register_blueprint(admin, name="admin")
 app.register_blueprint(proctoring, name="proctoring")
 
 
+@app.get('/favicon.ico')
+def favicon():
+    return '', 204
+
+
 @app.get('/health')
 def health():
     """Readiness probe without exposing database credentials or personal data."""
